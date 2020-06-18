@@ -1,0 +1,6 @@
+# build files
+build/
+.qmake.stash
+Makefile
+
+# kdevelop files
