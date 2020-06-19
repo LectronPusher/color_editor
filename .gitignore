@@ -4,3 +4,6 @@ build/
 Makefile
 
 # kdevelop files
+*.kdev4
+.kdev4/
+*.kate-swp
