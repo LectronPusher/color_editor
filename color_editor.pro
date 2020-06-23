@@ -5,15 +5,15 @@ QT += widgets
 INCLUDEPATH += src/
 
 SOURCES += src/main.cpp \
-		   src/editor/mainwindow.cpp \
-		   src/editor/image/imagepanel.cpp \
-		   src/editor/image/imagearea.cpp \
-		   src/editor/tools/toolpanel.cpp
+		   src/editor/main_window.cpp \
+		   src/editor/image/image_panel.cpp \
+		   src/editor/image/image_base.cpp \
+		   src/editor/tools/tool_panel.cpp
 
-HEADERS += src/editor/mainwindow.hpp \
-		   src/editor/image/imagepanel.hpp \
-		   src/editor/image/imagearea.hpp \
-		   src/editor/tools/toolpanel.hpp
+HEADERS += src/editor/main_window.hpp \
+		   src/editor/image/image_panel.hpp \
+		   src/editor/image/image_base.hpp \
+		   src/editor/tools/tool_panel.hpp
 
 TARGET = color_editor.exe
 DESTDIR = build

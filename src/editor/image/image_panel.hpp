@@ -1,9 +1,10 @@
 #pragma once
 
-#include "./imagearea.hpp"
+#include "./image_base.hpp"
 
 #include <QWidget>
 #include <QString>
+#include <QGraphicsScene>
 
 namespace editor{
 namespace image {
@@ -15,7 +16,8 @@ public:
 	image_panel(QWidget* parent);
 	
 private:
-	image_area *img_area;
+// 	bool valid_image = false;
+	QGraphicsScene *scene;
 	
 }; // image_panel
 

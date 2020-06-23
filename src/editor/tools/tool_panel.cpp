@@ -1,4 +1,4 @@
-#include "./toolpanel.hpp"
+#include "./tool_panel.hpp"
 
 editor::tools::tool_panel::tool_panel(QWidget *parent, tool_type type) 
 : QWidget(parent) {

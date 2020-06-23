@@ -1,7 +1,7 @@
 #pragma once
 
-#include "image/imagepanel.hpp"
-#include "tools/toolpanel.hpp"
+#include "image/image_panel.hpp"
+#include "tools/tool_panel.hpp"
 #include <QWidget>
 
 namespace editor {

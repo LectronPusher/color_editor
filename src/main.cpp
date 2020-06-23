@@ -1,5 +1,5 @@
 #include <QApplication>
-#include "editor/mainwindow.hpp"
+#include "editor/main_window.hpp"
 
 int main(int argc, char **argv) {
 	QApplication app(argc, argv);

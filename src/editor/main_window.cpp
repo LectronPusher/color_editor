@@ -1,6 +1,6 @@
-#include "./mainwindow.hpp"
-#include "image/imagepanel.hpp"
-#include "tools/toolpanel.hpp"
+#include "./main_window.hpp"
+#include "image/image_panel.hpp"
+#include "tools/tool_panel.hpp"
 
 #include <QGridLayout>
 
