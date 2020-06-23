@@ -1,17 +1,19 @@
 TEMPLATE = app
 
-QT = core widgets gui
+QT += widgets
 
-INCLUDEPATH = src/
+INCLUDEPATH += src/
 
-SOURCES = src/main.cpp \
-		  src/editor/mainwindow.cpp \
-		  src/editor/image/imagepanel.cpp \
-		  src/editor/tools/toolpanel.cpp
+SOURCES += src/main.cpp \
+		   src/editor/mainwindow.cpp \
+		   src/editor/image/imagepanel.cpp \
+		   src/editor/image/imagearea.cpp \
+		   src/editor/tools/toolpanel.cpp
 
-HEADERS = src/editor/mainwindow.cpp \
-		  src/editor/image/imagepanel.cpp \
-		  src/editor/tools/toolpanel.cpp
+HEADERS += src/editor/mainwindow.hpp \
+		   src/editor/image/imagepanel.hpp \
+		   src/editor/image/imagearea.hpp \
+		   src/editor/tools/toolpanel.hpp
 
 TARGET = color_editor.exe
 DESTDIR = build

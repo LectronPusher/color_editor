@@ -1,12 +1,23 @@
 #pragma once
 
-#include <QWidget>
+#include "./imagearea.hpp"
 
-namespace editor::image {
+#include <QWidget>
+#include <QString>
+
+namespace editor{
+namespace image {
 
 class image_panel : public QWidget {
+	Q_OBJECT
+	
+public:
+	image_panel(QWidget* parent);
+	
+private:
+	image_area *img_area;
 	
 }; // image_panel
 
-} // editor::image
-
+} // image
+} // editor
