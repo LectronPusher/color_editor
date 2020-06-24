@@ -22,7 +22,7 @@ editor::main_window::main_window() {
 	// layout stuff
 	QGridLayout *grid = new QGridLayout;
 	grid->addWidget(image_pan, 0, 0, 2, 1);
-	grid->addWidget(color_pan, 1, 0);
+	grid->addWidget(color_pan, 0, 1);
 	grid->addWidget(select_pan, 1, 1);
 	setLayout(grid);
 }

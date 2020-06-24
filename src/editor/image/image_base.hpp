@@ -25,7 +25,7 @@ private:
 	QImage image;
 // 	QImage *mask;
 	
-}; // image_panel
+}; // image_base
 
 } // image
 } // editor

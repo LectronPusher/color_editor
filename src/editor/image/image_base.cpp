@@ -14,7 +14,7 @@ QRectF image_base::boundingRect() const {
 void image_base::paint(QPainter *painter, const QStyleOptionGraphicsItem *,
 					   QWidget *) {
 	painter->drawImage(image.rect(), image);
-} 
+}
 
 
 
