@@ -21,9 +21,11 @@ public:
 	void paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
 			   QWidget *widget) override;
 	
+	QImage get_image();
+	
 private:
 	QImage image;
-// 	QImage *mask;
+	QImage mask;
 	
 }; // image_base
 

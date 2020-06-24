@@ -3,9 +3,7 @@
 #include "tools/tool_panel.hpp"
 
 #include <QGridLayout>
-
-#include <QTextStream>
-QTextStream out1(stdout);
+#include <QDebug>
 
 editor::main_window::main_window() {
 	setWindowTitle("color editor");
