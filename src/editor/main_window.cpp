@@ -1,26 +1,60 @@
-#include "./main_window.hpp"
-#include "image/image_panel.hpp"
-#include "tools/tool_panel.hpp"
+#include "main_window.hpp"
 
 #include <QGridLayout>
+#include <QHBoxLayout>
+#include <QVBoxLayout>
+#include <QToolButton>
 #include <QDebug>
 
-editor::main_window::main_window() {
+editor::main_window::main_window(QWidget *parent) : QWidget(parent) {
 	setWindowTitle("color editor");
 	
 	// initialization
-	image_pan = new editor::image::image_panel(this);
-	//image_pan->load_image("../data/mantis300.jpg");
+	view = new editor::image::image_view(this);
+	QImage image("/home/ian/all/coding/c++/color_editor/data/mantis300.jpg");
+	view->set_image(image);
 	color_pan = new editor::tools::tool_panel(this, editor::tools::color);
 	select_pan = new editor::tools::tool_panel(this, editor::tools::select);
+	// buttons to control the image
+	auto open_b = new QToolButton(this);
+	open_b->setText("Open");
+	auto save_as_b = new QToolButton(this);
+	save_as_b->setText("Save As");
+	auto zoom_in_b = new QToolButton(this);
+	zoom_in_b->setText("Zoom In");
+	auto zoom_out_b = new QToolButton(this);
+	zoom_out_b->setText("Zoom Out");
 	
 	// connections
-	
+	connect(open_b, &QToolButton::clicked,
+			view, &editor::image::image_view::open_image);
+	connect(save_as_b, &QToolButton::clicked,
+			view, &editor::image::image_view::save_as);
+	connect(zoom_in_b, &QToolButton::clicked,
+			view, &editor::image::image_view::zoom_in);
+	connect(zoom_out_b, &QToolButton::clicked,
+			view, &editor::image::image_view::zoom_out);
 	
 	// layout stuff
-	QGridLayout *grid = new QGridLayout;
-	grid->addWidget(image_pan, 0, 0, 2, 1);
-	grid->addWidget(color_pan, 0, 1);
-	grid->addWidget(select_pan, 1, 1);
-	setLayout(grid);
+	// buttons
+	auto image_buttons = new QHBoxLayout;
+	image_buttons->addWidget(open_b);
+	image_buttons->addWidget(save_as_b);
+	image_buttons->addWidget(zoom_in_b);
+	image_buttons->addWidget(zoom_out_b);
+	image_buttons->addStretch();
+	// images
+	auto image_panel = new QVBoxLayout;
+	image_panel->addLayout(image_buttons);
+	image_panel->addWidget(view);
+	// tool panels
+	auto tools_panel = new QVBoxLayout;
+	tools_panel->addWidget(select_pan);
+	tools_panel->addWidget(color_pan);
+	// comine 'em
+	auto both = new QHBoxLayout;
+	both->addLayout(image_panel);
+	both->addLayout(tools_panel);
+	setLayout(both);
 }
+
