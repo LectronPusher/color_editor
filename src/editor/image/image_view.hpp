@@ -50,7 +50,7 @@ private:
 // 	bool pan_enabled = false;
 // 	bool tool_enabled = false;
 	
-}; // image_panel
+}; // image_view
 
 } // image
 } // editor

@@ -16,6 +16,6 @@ public:
 	tools::tool_panel *color_pan;
 	tools::tool_panel *select_pan;
 	
-}; // window
+}; // main_window
 
 } // editor
