@@ -25,7 +25,6 @@ private slots:
 	
 private:
 	QVBoxLayout *vbox;
-	
 	QList<selector *> selectors;
 	int active_selector;
 	point_set selection;

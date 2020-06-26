@@ -16,8 +16,7 @@ main_window::main_window(QWidget *parent) : QWidget(parent) {
 	// initialization
 	view = new image::image_view(this);
 	// default so I don't have to load an image during every test
-	QImage image("/home/ian/all/coding/c++/color_editor/data/mantis300.jpg");
-	view->set_image(image);
+// 	view->open_image("/home/ian/all/coding/c++/color_editor/data/mantis300.jpg");
 	select_pan = new select::select_panel(this);
 // 	color_pan = new color::color_panel(this, tools::color);
 	// buttons to control the image
@@ -37,7 +36,7 @@ main_window::main_window(QWidget *parent) : QWidget(parent) {
 // 	connect(this, &main_window::points_selected,
 // 			view, &image::image_view::render_selected);
 	// image buttons
-	connect(open_b, &QToolButton::clicked, view, &image::image_view::open_image);
+	connect(open_b, &QToolButton::clicked, view, [=](){ view->open_image(); });
 	connect(save_as_b, &QToolButton::clicked, view, &image::image_view::save_as);
 	connect(zoom_in_b, &QToolButton::clicked, view, &image::image_view::zoom_in);
 	connect(zoom_out_b, &QToolButton::clicked, view, &image::image_view::zoom_out);
@@ -56,12 +55,14 @@ main_window::main_window(QWidget *parent) : QWidget(parent) {
 	image_panel->addWidget(view);
 	// tool panels
 	auto tool_panels = new QVBoxLayout;
-	tool_panels->addWidget(select_pan);
+	tool_panels->addWidget(select_pan, 0, Qt::AlignTop);
+	// separator
 	QLabel *hline = new QLabel(this);
 	hline->setFrameStyle(QFrame::HLine);
 	hline->setFixedHeight(5);
-	hline->setSizePolicy(QSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed));
-	tool_panels->addWidget(hline);
+	hline->setSizePolicy(QSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed));
+	tool_panels->addWidget(hline, 0, Qt::AlignTop);
+	tool_panels->addStretch();
 // 	tools_panel->addWidget(color_pan);
 	// combine 'em
 	auto all_panels = new QHBoxLayout;
@@ -72,8 +73,10 @@ main_window::main_window(QWidget *parent) : QWidget(parent) {
 
 void main_window::select_points() {
 	const QImage image = view->get_image();
-	point_set points = select_pan->make_selection(image);;
-	emit points_selected(points);
+	if (!image.isNull()) {
+		point_set points = select_pan->make_selection(image);;
+		emit points_selected(points);
+	}
 }
 
 } // editor

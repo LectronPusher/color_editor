@@ -13,9 +13,12 @@ select_panel::select_panel(QWidget *parent) : QWidget(parent) {
 	selectors.push_back(new select_all(this));
 	foreach(auto unique_selector, selectors)
 		unique_selector->setVisible(false);
+	// combo box
 	auto combo_box = new QComboBox(this);
+	combo_box->setSizePolicy(QSizePolicy(QSizePolicy::Maximum, QSizePolicy::Fixed));
 	foreach(auto unique_selector, selectors)
 		combo_box->addItem(unique_selector->name);
+	// common buttons for all selectors
 	auto select_b = new QToolButton(this);
 	select_b->setText("Select");
 	
@@ -28,15 +31,13 @@ select_panel::select_panel(QWidget *parent) : QWidget(parent) {
 	// layout
 	vbox = new QVBoxLayout;
 	// selectors
-	vbox->addWidget(combo_box);
+	vbox->addWidget(combo_box, 0, Qt::AlignTop);
 	foreach(auto unique_selector, selectors)
 		vbox->addWidget(unique_selector);
-	// main controls
+	// common buttons
 	auto hbox = new QHBoxLayout;
-	hbox->addStretch();
-	hbox->addWidget(select_b);
-	vbox->addStretch();
-	vbox->addLayout(hbox);
+	hbox->addWidget(select_b, 0, Qt::AlignRight | Qt::AlignTop);
+	vbox->addLayout(hbox, Qt::AlignTop);
 	setLayout(vbox);
 }
 
@@ -48,17 +49,17 @@ point_set select_panel::make_selection(const QImage &image) {
 	return selected_points();
 }
 
-void select_panel::set_active_selector(int index) {
-	selectors.at(active_selector)->setVisible(false);
-	active_selector = index;
-	selectors.at(active_selector)->setVisible(true);
-}
-
 point_set select_panel::selected_points() {
 	point_set points = selection;
 	if (!exclusion.is_empty())
 		points -= exclusion;
 	return points;
+}
+
+void select_panel::set_active_selector(int index) {
+	selectors.at(active_selector)->setVisible(false);
+	active_selector = index;
+	selectors.at(active_selector)->setVisible(true);
 }
 
 } // select

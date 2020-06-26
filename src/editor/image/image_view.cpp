@@ -8,81 +8,84 @@
 namespace editor{
 namespace image {
 
-//TODO scale on open (while loop?), fix center offset bug, fix /etc/samba save bug
+//TODO figure out /etc/samba save bug, probably not a me issue, but still possible
 
 image_view::image_view(QWidget *parent) : QGraphicsView(parent) {
 	image_scene = new QGraphicsScene(this);
-	image_scene->setBackgroundBrush(Qt::darkGray);
 	setScene(image_scene);
+	setBackgroundBrush(Qt::darkGray);
 }
 
-void image_view::open_image() {
+QSize image_view::minimumSizeHint() const {
+	return QSize(300, 300);
+}
+
+void image_view::open_image(QString filepath) {
 	save_request();
-	QString filepath = QFileDialog::getOpenFileName(
-		this, "Open Image", QDir().homePath(), "Image Files (*.png *.jpg *.bmp)"
-	);
+	if (filepath.isEmpty()) {
+		filepath = QFileDialog::getOpenFileName(
+			this, "Open Image", QDir().homePath(),
+			"Image Files (*.png *.jpg *.bmp)"
+		);
+	}
 	QImage image(filepath);
 	if (!image.isNull())
 		set_image(image);
 	else
-		qDebug() << "loading failed";
+		qDebug() << "loading image:" << filepath << "failed";
 }
 
 void image_view::set_image(QImage image) {
 	if (has_image) {
 		image_scene->removeItem(base);
 		delete base;
+		has_image = false;
 	}
 	base = new image_base(image);
-	image_scene->addItem(base);
-	reset_zoom();
-// 	while(scene->itemsBoundingRect().height > view->);
 	has_image = true;
+	image_scene->addItem(base);
+	image_scene->setSceneRect(base->boundingRect());
+	updateSceneRect(base->boundingRect());
+	fitInView(base, Qt::KeepAspectRatio);
 }
 
 bool image_view::save_request() {
 	if (has_image && image_modified) {
-		QMessageBox::StandardButton ret;
-		ret = QMessageBox::warning(
+		auto dialog_ans = QMessageBox::warning(
 			this, "Unsaved Changes", 
 			"The image has been modified.\nDo you want to save your changes?",
 			QMessageBox::Save | QMessageBox::Discard | QMessageBox::Cancel
 		);
-		if (ret == QMessageBox::Save)
+		if (dialog_ans == QMessageBox::Save)
 			save_as();
-		else if (ret == QMessageBox::Cancel)
+		else if (dialog_ans == QMessageBox::Cancel)
 			return false;
 	}
 	return true;
 }
 
 void image_view::save_as() {
-	QImage image = base->get_image();
 	QString filepath = QFileDialog::getSaveFileName(
 		this, "Save As", QDir().homePath() + "/untitled.png",
 		"Image Files (*.png *.jpg *.bmp);;All Files (*)"
 	);
 	if (!filepath.isEmpty())
-		image.save(filepath);
+		base->get_image().save(filepath);
 }
 
 void image_view::zoom_in() {
-	current_scale *= scale_by;
 	scale(scale_by, scale_by);
 }
 
 void image_view::zoom_out() {
-	current_scale /= scale_by;
 	scale(1/scale_by, 1/scale_by);
 }
 
-void image_view::reset_zoom() {
-	scale(1/current_scale, 1/current_scale);
-	current_scale = 1;
-}
-
-const QImage &image_view::get_image() {
-	return base->get_image();
+QImage image_view::get_image() {
+	if (has_image)
+		return base->get_image();
+	else
+		return QImage();
 }
 
 } // image

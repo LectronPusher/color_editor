@@ -16,21 +16,19 @@ class image_view : public QGraphicsView {
 	
 public:
 	image_view(QWidget *parent);
+	QSize minimumSizeHint() const override;
 	
 public slots:
 	// file i/o
-	void open_image();
-	void set_image(QImage image);
+	void open_image(QString filepath = "");
 	bool save_request();
 	void save_as();
 	// zoom
 	void zoom_in();
 	void zoom_out();
-	void reset_zoom();
 	// image data i/o
-	const QImage &get_image();
+	QImage get_image();
 	// mouse stuff
-	
 	
 protected:
 // 	void mousePressEvent(QMouseEvent *event) override;
@@ -44,11 +42,12 @@ private:
 	bool has_image = false;
 	bool image_modified = false;
 	// zoom
-	qreal current_scale = 1.0;
 	const qreal scale_by = 1.2;
 	// mouse stuff
 // 	bool pan_enabled = false;
 // 	bool tool_enabled = false;
+	
+	void set_image(QImage image);
 	
 }; // image_view
 
