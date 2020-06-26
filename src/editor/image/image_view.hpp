@@ -28,7 +28,7 @@ public slots:
 	void zoom_out();
 	void reset_zoom();
 	// image data i/o
-	
+	const QImage &get_image();
 	// mouse stuff
 	
 	
@@ -40,7 +40,7 @@ protected:
 private:
 	//file i/o
 	image_base *base = nullptr;
-	QGraphicsScene *scene;
+	QGraphicsScene *image_scene;
 	bool has_image = false;
 	bool image_modified = false;
 	// zoom

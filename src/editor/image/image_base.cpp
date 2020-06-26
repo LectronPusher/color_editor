@@ -18,7 +18,7 @@ void image_base::paint(QPainter *painter, const QStyleOptionGraphicsItem *,
 	painter->drawImage(image.rect(), image);
 }
 
-QImage image_base::get_image() {
+const QImage &image_base::get_image() {
 	return image;
 }
 

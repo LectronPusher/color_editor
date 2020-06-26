@@ -1,7 +1,8 @@
 #pragma once
 
+#include "point_set.hpp"
 #include "image/image_view.hpp"
-#include "tools/tool_panel.hpp"
+#include "select/select_panel.hpp"
 #include <QWidget>
 
 namespace editor {
@@ -12,9 +13,16 @@ class main_window : public QWidget {
 public:
 	main_window(QWidget *parent = nullptr);
 	
+private slots:
+	void select_points();
+	
+signals:
+	void points_selected(point_set points);
+	
+private:
  	image::image_view *view;
-	tools::tool_panel *color_pan;
-	tools::tool_panel *select_pan;
+// 	color::color_panel *color_pan;
+	select::select_panel *select_pan;
 	
 }; // main_window
 

@@ -11,9 +11,9 @@ namespace image {
 //TODO scale on open (while loop?), fix center offset bug, fix /etc/samba save bug
 
 image_view::image_view(QWidget *parent) : QGraphicsView(parent) {
-	scene = new QGraphicsScene(this);
-	scene->setBackgroundBrush(Qt::darkGray);
-	setScene(scene);
+	image_scene = new QGraphicsScene(this);
+	image_scene->setBackgroundBrush(Qt::darkGray);
+	setScene(image_scene);
 }
 
 void image_view::open_image() {
@@ -30,11 +30,11 @@ void image_view::open_image() {
 
 void image_view::set_image(QImage image) {
 	if (has_image) {
-		scene->removeItem(base);
+		image_scene->removeItem(base);
 		delete base;
 	}
 	base = new image_base(image);
-	scene->addItem(base);
+	image_scene->addItem(base);
 	reset_zoom();
 // 	while(scene->itemsBoundingRect().height > view->);
 	has_image = true;
@@ -79,6 +79,10 @@ void image_view::zoom_out() {
 void image_view::reset_zoom() {
 	scale(1/current_scale, 1/current_scale);
 	current_scale = 1;
+}
+
+const QImage &image_view::get_image() {
+	return base->get_image();
 }
 
 } // image

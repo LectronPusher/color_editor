@@ -19,7 +19,7 @@ public:
 	void paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
 			   QWidget *widget) override;
 	
-	QImage get_image();
+	const QImage &get_image();
 	
 private:
 	QImage image;
