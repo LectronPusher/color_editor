@@ -2,13 +2,16 @@
 
 #include "../point_set.hpp"
 #include "selector.hpp"
+#include "selector_stack.hpp"
 
 #include <QWidget>
-#include <QVBoxLayout>
-#include <QList>
+#include <QStackedLayout>
+#include <QComboBox>
 
 namespace editor {
 namespace select {
+
+enum select_type {select, exclude};
 
 class select_panel : public QWidget {
 	Q_OBJECT
@@ -20,13 +23,12 @@ public:
 signals:
 	void selection_requested();
 	
-private slots:
-	void set_active_selector(int index);
-	
 private:
-	QVBoxLayout *vbox;
-	QList<selector *> selectors;
-	int active_selector;
+	selector_stack *stack;
+	selector *active_selector();
+	void add_to_combo_box(QComboBox *combo_box);
+	
+	select_type which;
 	point_set selection;
 	point_set exclusion;
 	point_set selected_points();
