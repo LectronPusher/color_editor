@@ -2,6 +2,7 @@
 build/
 .qmake.stash
 Makefile
+vgcore.*
 
 # kdevelop files
 *.kdev4

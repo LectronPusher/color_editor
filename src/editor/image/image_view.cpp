@@ -4,6 +4,7 @@
 #include <QFileDialog>
 #include <QMessageBox>
 #include <QDebug>
+#include <QDir>
 
 namespace editor{
 namespace image {
@@ -21,28 +22,37 @@ QSize image_view::minimumSizeHint() const {
 }
 
 void image_view::open_image(QString filepath) {
-	save_request();
-	if (filepath.isEmpty()) {
-		filepath = QFileDialog::getOpenFileName(
-			this, "Open Image", QDir().homePath(),
-			"Image Files (*.png *.jpg *.bmp)"
-		);
+	if (save_request()) {
+		qDebug("open_image_");
+		if (filepath.isEmpty()) {
+			qDebug("open dialog");
+			filepath = QFileDialog::getOpenFileName(
+				this, "Open Image", QDir().homePath(),
+				"Image Files (*.png *.jpg *.bmp)"
+			);
+		}
+		qDebug() << "constructing from filepath:" << filepath;
+		QImage image;
+		if (!filepath.isEmpty())
+			image = QImage(filepath);
+		if (!image.isNull())
+			set_image(image);
+		else
+			qDebug() << "failed loading image:" << filepath;
 	}
-	QImage image(filepath);
-	if (!image.isNull())
-		set_image(image);
-	else
-		qDebug() << "loading image:" << filepath << "failed";
 }
 
 void image_view::set_image(QImage image) {
+	qDebug("set_image_");
 	if (has_image) {
 		image_scene->removeItem(base);
+		qDebug("deleting image_base");
 		delete base;
-		has_image = false;
 	}
+	qDebug("creating new image_base");
 	base = new image_base(image);
 	has_image = true;
+	qDebug("adding image_base to scene and view");
 	image_scene->addItem(base);
 	image_scene->setSceneRect(base->boundingRect());
 	updateSceneRect(base->boundingRect());
@@ -65,12 +75,16 @@ bool image_view::save_request() {
 }
 
 void image_view::save_as() {
-	QString filepath = QFileDialog::getSaveFileName(
-		this, "Save As", QDir().homePath() + "/untitled.png",
-		"Image Files (*.png *.jpg *.bmp);;All Files (*)"
-	);
-	if (!filepath.isEmpty())
-		base->get_image().save(filepath);
+	if (has_image) {
+		qDebug("save_as_");
+		QString filepath = QFileDialog::getSaveFileName(
+			this, "Save As", QDir().homePath() + "/untitled.png",
+			"Image Files (*.png *.jpg *.bmp);;All Files (*)"
+		);
+		qDebug() << "saving to filepath:" << filepath;
+		if (!filepath.isEmpty())
+			base->get_image().save(filepath);
+	}
 }
 
 void image_view::zoom_in() {
