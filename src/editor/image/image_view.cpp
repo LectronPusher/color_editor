@@ -4,6 +4,7 @@
 #include <QFileDialog>
 #include <QMessageBox>
 #include <QDebug>
+#include <QTextStream>
 #include <QDir>
 
 namespace editor{
@@ -22,47 +23,44 @@ QSize image_view::minimumSizeHint() const {
 }
 
 void image_view::open_image(QString filepath) {
-	if (save_request()) {
-		qDebug("open_image_");
+	if (maybe_save()) {
 		if (filepath.isEmpty()) {
-			qDebug("open dialog");
 			filepath = QFileDialog::getOpenFileName(
-				this, "Open Image", QDir().homePath(),
+				this,
+				"Open Image",
+				"home/ian/all/coding/c++/color_editor/data/",
 				"Image Files (*.png *.jpg *.bmp)"
 			);
 		}
-		qDebug() << "constructing from filepath:" << filepath;
 		QImage image;
-		if (!filepath.isEmpty())
+		if (!filepath.isEmpty()) {
 			image = QImage(filepath);
-		if (!image.isNull())
-			set_image(image);
-		else
-			qDebug() << "failed loading image:" << filepath;
+			if (!image.isNull())
+				set_image(image);
+			else
+				QTextStream(stdout) << "loading failed:" << filepath << Qt::endl;
+		}
 	}
 }
 
 void image_view::set_image(QImage image) {
-	qDebug("set_image_");
 	if (has_image) {
 		image_scene->removeItem(base);
-		qDebug("deleting image_base");
 		delete base;
 	}
-	qDebug("creating new image_base");
 	base = new image_base(image);
 	has_image = true;
-	qDebug("adding image_base to scene and view");
 	image_scene->addItem(base);
 	image_scene->setSceneRect(base->boundingRect());
 	updateSceneRect(base->boundingRect());
 	fitInView(base, Qt::KeepAspectRatio);
 }
 
-bool image_view::save_request() {
+bool image_view::maybe_save() {
 	if (has_image && image_modified) {
 		auto dialog_ans = QMessageBox::warning(
-			this, "Unsaved Changes", 
+			this,
+			"Unsaved Changes", 
 			"The image has been modified.\nDo you want to save your changes?",
 			QMessageBox::Save | QMessageBox::Discard | QMessageBox::Cancel
 		);
@@ -76,12 +74,12 @@ bool image_view::save_request() {
 
 void image_view::save_as() {
 	if (has_image) {
-		qDebug("save_as_");
 		QString filepath = QFileDialog::getSaveFileName(
-			this, "Save As", QDir().homePath() + "/untitled.png",
+			this,
+			"Save As",
+			"home/ian/all/coding/c++/color_editor/data/untitled.png",
 			"Image Files (*.png *.jpg *.bmp);;All Files (*)"
 		);
-		qDebug() << "saving to filepath:" << filepath;
 		if (!filepath.isEmpty())
 			base->get_image().save(filepath);
 	}

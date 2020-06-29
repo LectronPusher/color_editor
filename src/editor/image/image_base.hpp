@@ -9,7 +9,6 @@
 namespace editor{
 namespace image {
 
-// TODO update this
 class image_base : public QGraphicsItem {
 public:
 	image_base(QImage image_orig);
@@ -23,7 +22,6 @@ public:
 	
 private:
 	QImage image;
-	QImage mask;
 	
 }; // image_base
 

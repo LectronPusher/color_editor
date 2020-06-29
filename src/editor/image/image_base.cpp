@@ -7,8 +7,6 @@ namespace image {
 
 image_base::image_base(QImage image_orig) {
 	image = image_orig;
-	mask = QImage(image.size(), image.format());
-	mask.fill(Qt::transparent);
 }
 
 QRectF image_base::boundingRect() const {

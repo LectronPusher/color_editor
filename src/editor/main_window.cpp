@@ -55,13 +55,13 @@ main_window::main_window(QWidget *parent) : QWidget(parent) {
 	image_panel->addWidget(view);
 	// tool panels
 	auto tool_panels = new QVBoxLayout;
-	tool_panels->addWidget(select_pan, 0, Qt::AlignTop);
+	tool_panels->addWidget(select_pan);
 	// separator
 	QLabel *hline = new QLabel(this);
 	hline->setFrameStyle(QFrame::HLine);
 	hline->setFixedHeight(5);
 	hline->setSizePolicy(QSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed));
-	tool_panels->addWidget(hline, 0, Qt::AlignTop);
+	tool_panels->addWidget(hline);
 	tool_panels->addStretch();
 // 	tools_panel->addWidget(color_pan);
 	// combine 'em

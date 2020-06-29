@@ -1,0 +1,98 @@
+
+# regex for stuff: {([^{])*Memcheck:leak\n([^{])*specifi_error_name.*\n([^}])*}\n
+
+{
+   <uninitialized_jump>
+   Memcheck:Cond
+   obj:*
+   obj:*
+}
+{
+   <XML_ParseBuffer>
+   Memcheck:Leak
+   ...
+   fun:XML_ParseBuffer
+}
+
+# lib related
+{
+   <libKF5_param>
+   Memcheck:Param
+   waitid(infop)
+   ...
+   obj:/usr/lib/libKF5*
+}
+{
+   <libKF5>
+   Memcheck:Leak
+   ...
+   obj:/usr/lib/libKF5*
+}
+{
+   <libQt5XcbQpa>
+   Memcheck:Leak
+   ...
+   obj:/usr/lib/libQt5XcbQpa.*
+}
+{
+   <libpulse>
+   Memcheck:Leak
+   ...
+   obj:/usr/lib/libpulse.*
+}
+{
+   <libdbus>
+   Memcheck:Leak
+   ...
+   obj:/usr/lib/libdbus*
+}
+{
+   <libfontconfig>
+   Memcheck:Leak
+   ...
+   obj:/usr/lib/libfontconfig*
+}
+{
+   <libcanberra>
+   Memcheck:Leak
+   ...
+   obj:/usr/lib/libcanberra*
+}
+{
+   <libglib-2>
+   Memcheck:Leak
+   ...
+   obj:/usr/lib/libglib-2*
+}
+
+# in still-reachable, not in regular
+# {
+#    <_dl_catch_exception>
+#    Memcheck:Leak
+#    ...
+#    fun:_dl_catch_exception
+# }
+# {
+#    <ld-2>
+#    Memcheck:Leak
+#    ...
+#    obj:/usr/lib/ld-2*
+# }
+# {
+#    <_XOpenLC>
+#    Memcheck:Leak
+#    ...
+#    fun:_XOpenLC
+# }
+# {
+#    <mangled_glib_func>
+#    Memcheck:Leak
+#    ...
+#    fun:_ZN27QEventDispatcherGlibPrivateC1EP13_GMainContext
+# }
+# {
+#    <UDataMemory>
+#    Memcheck:Leak
+#    ...
+#    fun:UDataMemory_createNewInstance_67
+# }
