@@ -10,8 +10,6 @@
 namespace editor{
 namespace image {
 
-//TODO figure out /etc/samba save bug, probably not a me issue, but still possible
-
 image_view::image_view(QWidget *parent) : QGraphicsView(parent) {
 	image_scene = new QGraphicsScene(this);
 	setScene(image_scene);
