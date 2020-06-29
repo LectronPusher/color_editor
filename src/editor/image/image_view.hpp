@@ -17,17 +17,17 @@ class image_view : public QGraphicsView {
 public:
 	image_view(QWidget *parent);
 	QSize minimumSizeHint() const override;
+	const QImage get_image() const;
+	void set_color_mask(const QImage color_mask, const QPoint initial_point);
 	
 public slots:
 	// file i/o
-	void open_image(QString filepath = "");
-	bool save_request();
+	void open_image(QString filepath = QString());
 	void save_as();
+	bool maybe_save();
 	// zoom
 	void zoom_in();
 	void zoom_out();
-	// image data i/o
-	QImage get_image();
 	// mouse stuff
 	
 protected:
@@ -37,8 +37,8 @@ protected:
 	
 private:
 	//file i/o
-	image_base *base = nullptr;
 	QGraphicsScene *image_scene;
+	image_base *base = nullptr;
 	bool has_image = false;
 	bool image_modified = false;
 	// zoom

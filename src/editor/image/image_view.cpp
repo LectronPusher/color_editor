@@ -20,13 +20,25 @@ QSize image_view::minimumSizeHint() const {
 	return QSize(300, 300);
 }
 
+const QImage image_view::get_image() const {
+	if (has_image)
+		return base->get_image();
+	else
+		return QImage();
+}
+
+void image_view::set_color_mask(const QImage color_mask, const QPoint initial_point) {
+	base->set_color_mask(color_mask, initial_point);
+	image_scene->update();
+}
+
 void image_view::open_image(QString filepath) {
 	if (maybe_save()) {
 		if (filepath.isEmpty()) {
 			filepath = QFileDialog::getOpenFileName(
 				this,
 				"Open Image",
-				"home/ian/all/coding/c++/color_editor/data/",
+				"/home/ian/all/coding/c++/color_editor/data/",
 				"Image Files (*.png *.jpg *.bmp)"
 			);
 		}
@@ -41,17 +53,19 @@ void image_view::open_image(QString filepath) {
 	}
 }
 
-void image_view::set_image(QImage image) {
+void image_view::save_as() {
 	if (has_image) {
-		image_scene->removeItem(base);
-		delete base;
+		QString filepath = QFileDialog::getSaveFileName(
+			this,
+			"Save As",
+			"/home/ian/all/coding/c++/color_editor/data/untitled.png",
+			"Image Files (*.png *.jpg *.bmp);;All Files (*)"
+		);
+		if (!filepath.isEmpty()) {
+			QImage image = base->apply_mask();
+			image.save(filepath);
+		}
 	}
-	base = new image_base(image);
-	has_image = true;
-	image_scene->addItem(base);
-	image_scene->setSceneRect(base->boundingRect());
-	updateSceneRect(base->boundingRect());
-	fitInView(base, Qt::KeepAspectRatio);
 }
 
 bool image_view::maybe_save() {
@@ -70,17 +84,17 @@ bool image_view::maybe_save() {
 	return true;
 }
 
-void image_view::save_as() {
+void image_view::set_image(QImage image) {
 	if (has_image) {
-		QString filepath = QFileDialog::getSaveFileName(
-			this,
-			"Save As",
-			"home/ian/all/coding/c++/color_editor/data/untitled.png",
-			"Image Files (*.png *.jpg *.bmp);;All Files (*)"
-		);
-		if (!filepath.isEmpty())
-			base->get_image().save(filepath);
+		image_scene->removeItem(base);
+		delete base;
 	}
+	base = new image_base(image);
+	has_image = true;
+	image_scene->addItem(base);
+	image_scene->setSceneRect(base->boundingRect());
+	updateSceneRect(base->boundingRect());
+	fitInView(base, Qt::KeepAspectRatio);
 }
 
 void image_view::zoom_in() {
@@ -89,13 +103,6 @@ void image_view::zoom_in() {
 
 void image_view::zoom_out() {
 	scale(1/scale_by, 1/scale_by);
-}
-
-QImage image_view::get_image() {
-	if (has_image)
-		return base->get_image();
-	else
-		return QImage();
 }
 
 } // image
