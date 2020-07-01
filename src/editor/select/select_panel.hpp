@@ -2,11 +2,10 @@
 
 #include "../point_set.hpp"
 #include "selector.hpp"
-#include "selector_stack.hpp"
+#include "../widget_stack.hpp"
 
 #include <QWidget>
 #include <QStackedLayout>
-#include <QComboBox>
 
 namespace editor {
 namespace select {
@@ -24,7 +23,7 @@ signals:
 	void selection_requested();
 	
 private:
-	selector_stack *stack;
+	widget_stack<selector> *stack;
 	selector *active_selector();
 	void add_to_combo_box(QComboBox *combo_box);
 	

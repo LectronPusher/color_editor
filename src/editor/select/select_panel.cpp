@@ -11,8 +11,8 @@ namespace select {
 
 select_panel::select_panel(QWidget *parent) : QWidget(parent) {
 	// initializations
-	stack = new selector_stack;
-	auto combo_box = new QComboBox(this);
+	qDebug("oof");
+	stack = new widget_stack<selector>;
 	// common buttons for all selectors
 	auto select_b = new QToolButton(this);
 	select_b->setText("Select");
@@ -26,13 +26,11 @@ select_panel::select_panel(QWidget *parent) : QWidget(parent) {
 	connect(exclude_b, &QToolButton::clicked, this, &select_panel::selection_requested);
 	
 	// selectors
-	stack->add_selector(new selector_types::select_all(this));
-	stack->setup_with_combo_box(combo_box);
-	stack->setSizePolicy(QSizePolicy(QSizePolicy::Maximum, QSizePolicy::Maximum));
+	stack->add(new selector_types::select_all(this));
 	
 	// layout
 	auto vbox = new QVBoxLayout;
-	vbox->addWidget(combo_box);
+	qDebug("oof");
 	vbox->addWidget(stack);
 	// common buttons
 	auto hbox = new QHBoxLayout;
@@ -43,7 +41,7 @@ select_panel::select_panel(QWidget *parent) : QWidget(parent) {
 }
 
 point_set select_panel::make_selection(const QImage &image) {
-	point_set points = stack->active_selector()->select(image);
+	point_set points = stack->active()->select(image);
 	point_set &set = (which == select) ? selection : exclusion;
 	set |= points;
 	return selected_points();
