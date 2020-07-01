@@ -1,10 +1,8 @@
 #include "main_window.hpp"
-#include "select/selector.hpp"
-#include "select/selector_types/types.hpp"
+#include "select/selector_types.hpp"
 
 #include <QGridLayout>
 #include <QHBoxLayout>
-#include <QVBoxLayout>
 #include <QLabel>
 #include <QToolButton>
 #include <QImage>
@@ -15,24 +13,20 @@ namespace editor {
 main_window::main_window(QWidget *parent) : QWidget(parent) {
 	setWindowTitle("color editor");
 	
-// 	connect(this, &main_window::points_selected,
-// 			view, &image::image_view::render_selected);
-	
 	QLabel *hline = new QLabel(this);
 	hline->setFrameStyle(QFrame::HLine);
 	hline->setFixedHeight(5);
 	hline->setSizePolicy(QSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed));
 	
-	// layout stuff
 	auto image_panel = new QVBoxLayout;
 	setup_image_panel(image_panel);
-	// tool panels
+	
 	auto tool_panels = new QVBoxLayout;
 	setup_select_panel(tool_panels);
 	tool_panels->addWidget(hline);
-	// 	setup_color_panel(tool_panels);
+// 	setup_color_panel(tool_panels);
 	tool_panels->addStretch();
-	// combine 'em
+	
 	auto all_panels = new QHBoxLayout;
 	all_panels->addLayout(image_panel);
 	all_panels->addLayout(tool_panels);

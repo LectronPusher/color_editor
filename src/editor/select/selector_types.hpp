@@ -1,7 +1,7 @@
 #pragma once
 
-#include "../../point_set.hpp"
-#include "../selector.hpp"
+#include "../point_set.hpp"
+#include "selector.hpp"
 
 #include <QWidget>
 #include <QImage>

@@ -5,8 +5,10 @@
 #include "image/image_view.hpp"
 #include "select/selection.hpp"
 #include "select/selector.hpp"
+
 #include <QWidget>
 #include <QGridLayout>
+#include <QVBoxLayout>
 
 namespace editor {
 
@@ -18,9 +20,6 @@ public:
 	
 private slots:
 	void select_points();
-	
-signals:
-	void points_selected(point_set points);
 	
 private:
 	// model
