@@ -5,9 +5,9 @@
 #include "image/image_view.hpp"
 #include "select/selection.hpp"
 #include "select/selector.hpp"
+#include "color/color_effect.hpp"
 
 #include <QWidget>
-#include <QGridLayout>
 #include <QVBoxLayout>
 
 namespace editor {
@@ -29,12 +29,13 @@ private:
 	select::selection selection;
 	// stores the available selectors and their algorithms
 	widget_stack<select::selector> *selector_stack;
+	// stores available color effects and their algorithms
+	widget_stack<color::color_effect> *effect_stack;
 	
 	// view
 	void setup_image_panel(QVBoxLayout *image_panel);
 	void setup_select_panel(QVBoxLayout *select_panel);
-// 	void setup_color_panel(QVBoxLayout *color_panel);
-	
+	void setup_color_panel(QVBoxLayout *color_panel);
 	
 }; // main_window
 

@@ -1,5 +1,6 @@
 #include "main_window.hpp"
 #include "select/selector_types.hpp"
+#include "color/effect_types.hpp"
 
 #include <QGridLayout>
 #include <QHBoxLayout>
@@ -24,7 +25,7 @@ main_window::main_window(QWidget *parent) : QWidget(parent) {
 	auto tool_panels = new QVBoxLayout;
 	setup_select_panel(tool_panels);
 	tool_panels->addWidget(hline);
-// 	setup_color_panel(tool_panels);
+	setup_color_panel(tool_panels);
 	tool_panels->addStretch();
 	
 	auto all_panels = new QHBoxLayout;
@@ -36,7 +37,7 @@ main_window::main_window(QWidget *parent) : QWidget(parent) {
 void main_window::setup_image_panel(QVBoxLayout *image_panel) {
 	view = new image::image_view(this);
 	// default so I don't have to load an image during every test
-// 	view->open_image("/home/ian/all/coding/c++/color_editor/data/mantis300.jpg");
+	view->open_image("/home/ian/all/coding/c++/color_editor/data/mantis300.jpg");
 	auto open_b = new QToolButton(this);
 	open_b->setText("Open");
 	auto save_as_b = new QToolButton(this);
@@ -62,6 +63,7 @@ void main_window::setup_image_panel(QVBoxLayout *image_panel) {
 	image_panel->addWidget(view);
 }
 
+// TODO clear the selection when an image is opened
 void main_window::setup_select_panel(QVBoxLayout *select_panel) {
 	selector_stack = new widget_stack<select::selector>(this);
 	selector_stack->add(new select::selector_types::select_all(this));
@@ -87,12 +89,22 @@ void main_window::setup_select_panel(QVBoxLayout *select_panel) {
 	select_panel->addLayout(hbox);
 }
 
+void main_window::setup_color_panel(QVBoxLayout *color_panel) {
+	effect_stack = new widget_stack<color::color_effect>(this);
+	effect_stack->add(new color::effect_types::make_red(this));
+	color_panel->addWidget(effect_stack);
+}
+
 void main_window::select_points() {
 	const QImage image = view->get_image();
 	if (!image.isNull()) {
 		point_set points = selector_stack->active()->select(image);
 		selection.add_selected(points);
+		QRect rect = selection.selected_points().rect();
+		QImage mask = effect_stack->active()->create_mask(image, rect);
+		view->set_color_mask(mask, rect);
 	}
+	
 }
 
 } // editor

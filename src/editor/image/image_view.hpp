@@ -18,7 +18,7 @@ public:
 	image_view(QWidget *parent);
 	QSize minimumSizeHint() const override;
 	const QImage get_image() const;
-	void set_color_mask(const QImage color_mask, const QPoint initial_point);
+	void set_color_mask(const QImage &color_mask, const QRect &rect);
 	
 public slots:
 	// file i/o

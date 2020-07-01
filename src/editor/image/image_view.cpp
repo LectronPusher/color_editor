@@ -27,9 +27,9 @@ const QImage image_view::get_image() const {
 		return QImage();
 }
 
-void image_view::set_color_mask(const QImage color_mask, const QPoint initial_point) {
-	base->set_color_mask(color_mask, initial_point);
-	image_scene->update();
+void image_view::set_color_mask(const QImage &color_mask, const QRect &rect) {
+	base->set_color_mask(color_mask, rect.topLeft());
+	image_scene->update(rect);
 }
 
 void image_view::open_image(QString filepath) {
