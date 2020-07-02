@@ -47,7 +47,10 @@ void main_window::setup_image_panel(QVBoxLayout *image_panel) {
 	auto zoom_out_b = new QToolButton(this);
 	zoom_out_b->setText("Zoom Out");
 	
-	connect(open_b, &QToolButton::clicked, view, [=](){ view->open_image(); });
+	connect(open_b, &QToolButton::clicked, view, [=](){
+		view->open_image(); 
+		selection.clear();
+	});
 	connect(save_as_b, &QToolButton::clicked, view, &image::image_view::save_as);
 	connect(zoom_in_b, &QToolButton::clicked, view, &image::image_view::zoom_in);
 	connect(zoom_out_b, &QToolButton::clicked, view, &image::image_view::zoom_out);
@@ -98,9 +101,9 @@ void main_window::setup_color_panel(QVBoxLayout *color_panel) {
 void main_window::select_points() {
 	const QImage image = view->get_image();
 	if (!image.isNull()) {
-		point_set points = selector_stack->active()->select(image);
-		selection.add_selected(points);
-		QRect rect = selection.selected_points().rect();
+		QRegion region = selector_stack->active()->select(image);
+		selection.add_selected(region);
+		QRect rect = selection.selected_region().boundingRect();
 		QImage mask = effect_stack->active()->create_mask(image, rect);
 		view->set_color_mask(mask, rect);
 	}

@@ -3,16 +3,16 @@
 namespace editor {
 namespace select {
 
-void selection::add_selected(point_set points) {
-	point_set &set = (next_selection_type == select) ? selected : excluded;
-	set |= points;
+void selection::add_selected(QRegion region) {
+	QRegion &set = (next_selection_type == select) ? selected : excluded;
+	set |= region;
 }
 
-point_set selection::selected_points() {
-	point_set points = selected;
-	if (!excluded.is_empty())
-		points -= excluded;
-	return points;
+QRegion selection::selected_region() {
+	QRegion region = selected;
+	if (!excluded.isEmpty())
+		region -= excluded;
+	return region;
 }
 
 void selection::clear() {

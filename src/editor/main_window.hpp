@@ -1,6 +1,5 @@
 #pragma once
 
-#include "point_set.hpp"
 #include "widget_stack.hpp"
 #include "image/image_view.hpp"
 #include "select/selection.hpp"
@@ -9,6 +8,7 @@
 
 #include <QWidget>
 #include <QVBoxLayout>
+#include <QRegion>
 
 namespace editor {
 

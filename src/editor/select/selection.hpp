@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../point_set.hpp"
+#include <QRegion>
 
 namespace editor {
 namespace select {
@@ -9,14 +9,14 @@ enum select_type {select, exclude};
 
 class selection {
 public:
-	void add_selected(point_set points);
-	point_set selected_points();
+	void add_selected(QRegion points);
+	QRegion selected_region();
 	void clear();
 	select_type next_selection_type = select;
 	
 private:
-	point_set selected;
-	point_set excluded;
+	QRegion selected;
+	QRegion excluded;
 	
 }; // selection
 
