@@ -9,14 +9,14 @@ enum select_type {select, exclude};
 
 class selection {
 public:
-	void add_selected(QRegion points);
-	QRegion selected_region();
+	void add(QRegion points);
+	QRegion selected();
 	void clear();
 	select_type next_selection_type = select;
 	
 private:
-	QRegion selected;
-	QRegion excluded;
+	QRegion selected_region;
+	QRegion excluded_region;
 	
 }; // selection
 

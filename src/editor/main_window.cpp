@@ -7,6 +7,7 @@
 #include <QLabel>
 #include <QToolButton>
 #include <QImage>
+#include <QRegion>
 #include <QDebug>
 
 namespace editor {
@@ -101,13 +102,13 @@ void main_window::setup_color_panel(QVBoxLayout *color_panel) {
 void main_window::select_points() {
 	const QImage image = view->get_image();
 	if (!image.isNull()) {
-		QRegion region = selector_stack->active()->select(image);
-		selection.add_selected(region);
-		QRect rect = selection.selected_region().boundingRect();
-		QImage mask = effect_stack->active()->create_mask(image, rect);
-		view->set_color_mask(mask, rect);
+		QRegion new_selection = selector_stack->active()->select(image);
+		selection.add(new_selection);
+		QRegion region = selection.selected();
+		QImage mask =
+			effect_stack->active()->create_mask(image, region.boundingRect());
+		view->set_mask(mask, region);
 	}
-	
 }
 
 } // editor

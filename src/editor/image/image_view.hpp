@@ -2,11 +2,9 @@
 
 #include "image_base.hpp"
 
-#include <QWidget>
-#include <QImage>
-#include <QDir>
-#include <QGraphicsScene>
 #include <QGraphicsView>
+#include <QGraphicsScene>
+#include <QWidget>
 
 namespace editor{
 namespace image {
@@ -18,7 +16,7 @@ public:
 	image_view(QWidget *parent);
 	QSize minimumSizeHint() const override;
 	const QImage get_image() const;
-	void set_color_mask(const QImage &color_mask, const QRect &rect);
+	void set_mask(const QImage new_mask, const QRegion region);
 	
 public slots:
 	// file i/o
@@ -38,7 +36,7 @@ protected:
 private:
 	//file i/o
 	QGraphicsScene *image_scene;
-	image_base *base = nullptr;
+	image_base *base;
 	bool has_image = false;
 	bool image_modified = false;
 	// zoom

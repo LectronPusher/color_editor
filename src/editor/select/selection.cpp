@@ -3,21 +3,22 @@
 namespace editor {
 namespace select {
 
-void selection::add_selected(QRegion region) {
-	QRegion &set = (next_selection_type == select) ? selected : excluded;
-	set |= region;
+void selection::add(QRegion region) {
+	if (next_selection_type == select)
+		selected_region |= region;
+	else
+		excluded_region |= region;
 }
 
-QRegion selection::selected_region() {
-	QRegion region = selected;
-	if (!excluded.isEmpty())
-		region -= excluded;
-	return region;
+QRegion selection::selected() {
+	if (!excluded_region.isEmpty())
+		return selected_region - excluded_region;
+	return selected_region;
 }
 
 void selection::clear() {
-	selected -= selected;
-	excluded -= excluded;
+	selected_region = QRegion();
+	excluded_region = QRegion();
 }
 
 } // select

@@ -4,6 +4,7 @@
 #include <QStyleOptionGraphicsItem>
 #include <QPainter>
 #include <QImage>
+#include <QRegion>
 
 namespace editor{
 namespace image {
@@ -12,9 +13,9 @@ class image_base : public QGraphicsItem {
 public:
 	image_base(const QImage image_orig, QGraphicsItem *parent = nullptr);
 	QRectF boundingRect() const override;
-	// get the image
+	
 	const QImage get_image() const;
-	void set_color_mask(const QImage color_mask, const QPoint initial_point);
+	void set_mask(const QImage new_mask, const QRegion region);
 	const QImage apply_mask();
 	
 	void paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
@@ -22,7 +23,7 @@ public:
 private:
 	QImage image;
 	QImage mask;
-	QPoint mask_top_left;
+	QRegion mask_region;
 	
 }; // image_base
 

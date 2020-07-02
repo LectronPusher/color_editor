@@ -3,9 +3,8 @@
 #include <QToolButton>
 #include <QFileDialog>
 #include <QMessageBox>
-#include <QDebug>
-#include <QTextStream>
 #include <QDir>
+#include <QTextStream>
 
 namespace editor{
 namespace image {
@@ -27,9 +26,10 @@ const QImage image_view::get_image() const {
 		return QImage();
 }
 
-void image_view::set_color_mask(const QImage &color_mask, const QRect &rect) {
-	base->set_color_mask(color_mask, rect.topLeft());
-	image_scene->update(rect);
+void image_view::set_mask(const QImage new_mask, const QRegion region) {
+	base->set_mask(new_mask, region);
+	image_scene->update(region.boundingRect());
+	image_modified = true;
 }
 
 void image_view::open_image(QString filepath) {
@@ -63,6 +63,7 @@ void image_view::save_as() {
 		);
 		if (!filepath.isEmpty()) {
 			QImage image = base->apply_mask();
+			image_modified = false;
 			image.save(filepath);
 		}
 	}
@@ -91,6 +92,7 @@ void image_view::set_image(QImage image) {
 	}
 	base = new image_base(image);
 	has_image = true;
+	image_modified = false;
 	image_scene->addItem(base);
 	image_scene->setSceneRect(base->boundingRect());
 	updateSceneRect(base->boundingRect());

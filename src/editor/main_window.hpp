@@ -8,7 +8,6 @@
 
 #include <QWidget>
 #include <QVBoxLayout>
-#include <QRegion>
 
 namespace editor {
 
