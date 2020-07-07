@@ -18,27 +18,30 @@ main_window::main_window(QWidget *parent) : QWidget(parent) {
 	QLabel *hline = new QLabel(this);
 	hline->setFrameStyle(QFrame::HLine);
 	hline->setFixedHeight(5);
-	hline->setSizePolicy(QSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed));
+	hline->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
 	
 	auto image_panel = new QVBoxLayout;
 	setup_image_panel(image_panel);
 	
-	auto tool_panels = new QVBoxLayout;
+	QWidget *tool_panel_wrapper = new QWidget;
+	auto tool_panels = new QVBoxLayout(tool_panel_wrapper);
+	tool_panels->setContentsMargins(0, 0, 0, 0);
 	setup_select_panel(tool_panels);
 	tool_panels->addWidget(hline);
 	setup_color_panel(tool_panels);
-	tool_panels->addStretch();
+	tool_panels->setSizeConstraint(QLayout::SetFixedSize);
 	
 	auto all_panels = new QHBoxLayout;
 	all_panels->addLayout(image_panel);
-	all_panels->addLayout(tool_panels);
+	all_panels->addWidget(tool_panel_wrapper);
+	all_panels->setAlignment(tool_panel_wrapper, Qt::AlignTop);
 	setLayout(all_panels);
 }
 
 void main_window::setup_image_panel(QVBoxLayout *image_panel) {
 	view = new image::image_view(this);
 	// default so I don't have to load an image during every test
-	view->open_image("/home/ian/all/coding/c++/color_editor/data/mantis300.jpg");
+// 	view->open_image("/home/ian/all/coding/c++/color_editor/data/mantis300.jpg");
 	auto open_b = new QToolButton(this);
 	open_b->setText("Open");
 	auto save_as_b = new QToolButton(this);
@@ -61,9 +64,9 @@ void main_window::setup_image_panel(QVBoxLayout *image_panel) {
 	image_buttons->addWidget(save_as_b);
 	image_buttons->addWidget(zoom_in_b);
 	image_buttons->addWidget(zoom_out_b);
-	image_buttons->addStretch();
 	
 	image_panel->addLayout(image_buttons);
+	image_panel->setAlignment(image_buttons, Qt::AlignLeft);
 	image_panel->addWidget(view);
 }
 
@@ -73,17 +76,17 @@ void main_window::setup_select_panel(QVBoxLayout *select_panel) {
 	selector_stack->add(new select::selector_types::select_all(this));
 	
 	// common buttons for all selectors
-	auto select_b = new QToolButton(this);
-	select_b->setText("Select");
 	auto exclude_b = new QToolButton(this);
 	exclude_b->setText("Exclude");
+	auto select_b = new QToolButton(this);
+	select_b->setText("Select");
 	
-	connect(select_b, &QToolButton::clicked,
-			this, [this](){ selection.next_selection_type = select::select; });
-	connect(select_b, &QToolButton::clicked, this, &main_window::select_points);
 	connect(exclude_b, &QToolButton::clicked,
 			this, [this](){ selection.next_selection_type = select::exclude; });
 	connect(exclude_b, &QToolButton::clicked, this, &main_window::select_points);
+	connect(select_b, &QToolButton::clicked,
+			this, [this](){ selection.next_selection_type = select::select; });
+	connect(select_b, &QToolButton::clicked, this, &main_window::select_points);
 	
 	auto hbox = new QHBoxLayout;
 	hbox->addWidget(exclude_b);

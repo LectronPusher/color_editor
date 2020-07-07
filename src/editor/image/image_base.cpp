@@ -1,4 +1,4 @@
-#include "./image_base.hpp"
+#include "image_base.hpp"
 
 namespace editor{
 namespace image {

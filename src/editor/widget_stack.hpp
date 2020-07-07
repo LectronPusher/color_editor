@@ -16,7 +16,6 @@ public:
 	// setup the stack and connect the combo box to the stacked widget
 	widget_stack(QWidget *parent = nullptr) : QWidget(parent) {
 		stack = new QStackedWidget;
-		stack->setSizePolicy(QSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed));
 		box = new QComboBox;
 		
 		auto box_changed = QOverload<int>::of(&QComboBox::currentIndexChanged);
@@ -37,12 +36,12 @@ public:
 	
 	// return the active item in the stack
 	T *active() {
-		return static_cast<T *>(stack->currentWidget());
+		return qobject_cast<T *>(stack->currentWidget());
 	}
 	
 	// return the item at index
 	T *at(int index) {
-		return static_cast<T *>(stack->widget(index));
+		return qobject_cast<T *>(stack->widget(index));
 	}
 	
 	// return how many items are in the stack
