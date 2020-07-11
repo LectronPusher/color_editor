@@ -4,15 +4,14 @@
 #include <QFileDialog>
 #include <QMessageBox>
 #include <QTextStream>
+#include <QDebug>
 
 namespace editor{
 namespace image {
 
 image_view::image_view(QWidget *parent) : QGraphicsView(parent) {
+	setScene(new QGraphicsScene(this));
 	setBackgroundBrush(Qt::darkGray);
-	image_scene = new QGraphicsScene(this);
-	setScene(image_scene);
-	resize(304, 304);
 }
 
 QSize image_view::minimumSizeHint() const {
@@ -28,7 +27,7 @@ const QImage image_view::get_image() const {
 
 void image_view::set_mask(const QImage &new_mask, const QRegion &region) {
 	base->set_mask(new_mask, region);
-	image_scene->update(region.boundingRect());
+	scene()->update(region.boundingRect());
 	image_modified = true;
 }
 
@@ -87,27 +86,6 @@ bool image_view::maybe_save() {
 	return true;
 }
 
-void image_view::set_image(const QImage &image) {
-	reset_zoom();
-	if (has_image) {
-		image_scene->removeItem(base);
-		delete base;
-	}
-	base = new image_base(image);
-	has_image = true;
-	image_modified = false;
-	image_scene->addItem(base);
-	image_scene->setSceneRect(base->boundingRect());
-	updateSceneRect(base->boundingRect());
-	
-	//TODO fix reopening bug: pressing 100% then opening an image leaves a larger outline than normal around the image
-	bool width_larger = image.size().width() > size().width();
-	bool height_larger = image.size().height() > size().height();
-	if (width_larger || height_larger) {
-		fitInView(base, Qt::KeepAspectRatio);
-	}
-}
-
 void image_view::zoom_in() {
 	scale(scale_factor, scale_factor);
 }
@@ -118,6 +96,36 @@ void image_view::zoom_out() {
 
 void image_view::reset_zoom() {
 	setTransform(QTransform());
+}
+
+void image_view::set_image(const QImage &image) {
+	// delete the old image if there was one
+	if (has_image) {
+		scene()->removeItem(base);
+		delete base;
+	}
+	
+	// add the new image and update variables
+	base = new image_base(image);
+	has_image = true;
+	image_modified = false;
+	scene()->addItem(base);
+	
+	// reset the scene rectangle and zoom
+	reset_zoom();
+	scene()->setSceneRect(base->boundingRect());
+	updateSceneRect(base->boundingRect());
+	
+	// resize the image if it's larger than the viewport, handles scrollbars
+	if (image.size().boundedTo(viewport()->size()) != image.size()) {
+		setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+		setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+		
+		fitInView(sceneRect(), Qt::KeepAspectRatio);
+		
+		setHorizontalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+		setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+	}
 }
 
 } // image

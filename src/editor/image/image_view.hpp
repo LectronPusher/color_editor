@@ -29,14 +29,13 @@ public slots:
 	void reset_zoom();
 	
 private:
-	QGraphicsScene *image_scene;
 	image_base *base;
 	bool has_image = false;
 	bool image_modified = false;
 	const qreal scale_factor = 1.2;
 	
 	QFileInfo old_file = QFileInfo("/home/ian/all/coding/c++/color_editor/data/");
-	// 	QFileInfo old_file = QFileInfo(QDir::homePath());
+// 	QFileInfo old_file = QFileInfo(QDir::homePath());
 	
 	void set_image(const QImage &image);
 	
