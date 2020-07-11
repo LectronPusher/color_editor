@@ -9,7 +9,7 @@ selector::selector(QWidget *parent, QString name_in)
 	setLayout(options);
 }
 
-const QString selector::name() {
+const QString selector::name() const {
 	return selector_name;
 }
 

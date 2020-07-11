@@ -4,7 +4,8 @@
 
 #include <QGraphicsView>
 #include <QGraphicsScene>
-#include <QWidget>
+#include <QDir>
+#include <QFileInfo>
 
 namespace editor{
 namespace image {
@@ -13,39 +14,31 @@ class image_view : public QGraphicsView {
 	Q_OBJECT
 	
 public:
-	image_view(QWidget *parent);
+	image_view(QWidget *parent = nullptr);
 	QSize minimumSizeHint() const override;
 	const QImage get_image() const;
-	void set_mask(const QImage new_mask, const QRegion region);
+	void set_mask(const QImage &new_mask, const QRegion &region);
 	
 public slots:
-	// file i/o
 	void open_image(QString filepath = QString());
 	void save_as();
 	bool maybe_save();
-	// zoom
+	
 	void zoom_in();
 	void zoom_out();
-	// mouse stuff
-	
-protected:
-// 	void mousePressEvent(QMouseEvent *event) override;
-// 	void mouseMoveEvent(QMouseEvent *event) override;
-// 	void mouseReleaseEvent(QMouseEvent *event) override;
+	void reset_zoom();
 	
 private:
-	//file i/o
 	QGraphicsScene *image_scene;
 	image_base *base;
 	bool has_image = false;
 	bool image_modified = false;
-	// zoom
-	const qreal scale_by = 1.2;
-	// mouse stuff
-// 	bool pan_enabled = false;
-// 	bool tool_enabled = false;
+	const qreal scale_factor = 1.2;
 	
-	void set_image(QImage image);
+	QFileInfo old_file = QFileInfo("/home/ian/all/coding/c++/color_editor/data/");
+	// 	QFileInfo old_file = QFileInfo(QDir::homePath());
+	
+	void set_image(const QImage &image);
 	
 }; // image_view
 

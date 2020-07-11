@@ -13,7 +13,7 @@ public:
 	QImage create_mask(const QImage &image, const QRect &rect) const override;
 	
 private:
-	color_label *changable_color;
+	color_label *changeable_color;
 	
 }; // solid_color
 

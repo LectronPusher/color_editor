@@ -7,7 +7,7 @@ namespace editor {
 namespace color {
 
 color_label::color_label(QWidget *parent, QColor starting_color, bool interactive)
-: QFrame(parent), fill_color(starting_color), is_interactive(interactive) {
+: QFrame(parent), is_interactive(interactive), fill_color(starting_color) {
 	QWidget::resize(25, 25);
 	setFrameStyle(QFrame::Panel | QFrame::Sunken);
 	setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
@@ -50,9 +50,6 @@ void color_label::open_dialog() {
 	
 	dialog->show();
 }
-
-
-
 
 } // color
 } // editor

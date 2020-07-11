@@ -14,7 +14,8 @@ solid_color::solid_color(QWidget *parent)
 	auto label = new QLabel(this);
 	label->setText("Color:");
 	
-	connect(changeable_color, &color_label::color_changed, this, &color_effect::altered);
+	connect(changeable_color, &color_label::color_changed,
+			this, &color_effect::altered);
 	
 	options->addWidget(label, 0, 0);
 	options->addWidget(changeable_color, 0, 1);

@@ -7,8 +7,8 @@
 namespace editor {
 
 // a convenience class for a QStackedWidget with a QComboBox above it
-// requires that T has public member *name* and inherits from QWidget
-// name is the identifier given to the combo box
+// requires that T has public name() function and inherits from QWidget
+// the value of name() is the identifier given to the combo box
 // you can loop through all items in the stack by using count() and at(index)
 template <typename T>
 class widget_stack : public QWidget {
@@ -18,8 +18,8 @@ public:
 		stack = new QStackedWidget;
 		box = new QComboBox;
 		
-		auto box_changed = QOverload<int>::of(&QComboBox::currentIndexChanged);
-		connect(box, box_changed, stack, &QStackedWidget::setCurrentIndex);
+		connect(box, QOverload<int>::of(&QComboBox::currentIndexChanged),
+				stack, &QStackedWidget::setCurrentIndex);
 		
 		auto vbox = new QVBoxLayout;
 		vbox->setContentsMargins(0, 0, 0, 0);
@@ -28,13 +28,13 @@ public:
 		setLayout(vbox);
 	}
 	
-	// add a new T to the bottom of the stack and the box
+	// add a new T to the stack and the box
 	void add(T *new_item) {
 		stack->addWidget(new_item);
 		box->addItem(new_item->name());
 	}
 	
-	// return the active item in the stack
+	// return the active item
 	T *active() {
 		return qobject_cast<T *>(stack->currentWidget());
 	}
@@ -44,7 +44,7 @@ public:
 		return qobject_cast<T *>(stack->widget(index));
 	}
 	
-	// return how many items are in the stack
+	// return the number of items in the widget_stack
 	int count() {
 		return stack->count();
 	}

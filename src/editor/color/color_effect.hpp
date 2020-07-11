@@ -14,7 +14,7 @@ class color_effect : public QWidget {
 	
 public:
 	color_effect(QWidget *parent, QString name_in);
-	const QString name();
+	const QString name() const;
 	
 public slots:
 	virtual QImage create_mask(const QImage &image, const QRect &rect) const = 0;

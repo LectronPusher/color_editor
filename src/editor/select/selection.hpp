@@ -9,8 +9,8 @@ enum select_type {select, exclude};
 
 class selection {
 public:
-	void add(QRegion points);
-	QRegion selected();
+	void add(const QRegion &points);
+	QRegion selected() const;
 	void clear();
 	select_type next_selection_type = select;
 	

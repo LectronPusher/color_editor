@@ -9,10 +9,9 @@ color_effect::color_effect(QWidget *parent, QString name_in)
 	setLayout(options);
 }
 
-const QString color_effect::name() {
+const QString color_effect::name()  const {
 	return effect_name;
 }
-
 
 } // color
 } // editor

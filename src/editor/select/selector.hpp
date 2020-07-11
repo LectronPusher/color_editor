@@ -14,7 +14,7 @@ class selector : public QWidget {
 	
 public:
 	selector(QWidget *parent, QString name_in);
-	const QString name();
+	const QString name() const;
 	virtual QRegion select(const QImage &image) const = 0;
 	
 protected:

@@ -36,6 +36,5 @@ private:
 	
 }; // color_label
 
-
 } // color
 } // editor
