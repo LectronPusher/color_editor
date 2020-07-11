@@ -98,15 +98,30 @@ void main_window::setup_select_panel(QVBoxLayout *select_panel) {
 
 void main_window::setup_color_panel(QVBoxLayout *color_panel) {
 	effect_stack = new widget_stack<color::color_effect>(this);
-	effect_stack->add(new color::effect_types::make_red(this));
+	effect_stack->add(new color::effect_types::solid_color(this));
+	
+	for (int i = 0; i < effect_stack->count(); ++i) {
+		connect(effect_stack->at(i), &color::color_effect::altered,
+				this, &main_window::effect_altered);
+	}
 	color_panel->addWidget(effect_stack);
 }
 
 void main_window::select_points() {
-	const QImage image = view->get_image();
+	const QImage &image = view->get_image();
 	if (!image.isNull()) {
 		QRegion new_selection = selector_stack->active()->select(image);
 		selection.add(new_selection);
+		QRegion region = selection.selected();
+		QImage mask =
+			effect_stack->active()->create_mask(image, region.boundingRect());
+		view->set_mask(mask, region);
+	}
+}
+
+void main_window::effect_altered() {
+	const QImage &image = view->get_image();
+	if (!image.isNull()) {
 		QRegion region = selection.selected();
 		QImage mask =
 			effect_stack->active()->create_mask(image, region.boundingRect());

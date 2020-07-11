@@ -7,15 +7,15 @@ namespace editor {
 namespace color {
 namespace effect_types {
 
-class make_red : public color_effect {
+class solid_color : public color_effect {
 public:
-	make_red(QWidget *parent);
+	solid_color(QWidget *parent);
 	QImage create_mask(const QImage &image, const QRect &rect) const override;
 	
 private:
-	color_label *fill_color;
+	color_label *changable_color;
 	
-}; // make_red
+}; // solid_color
 
 } // effect_types
 } // color

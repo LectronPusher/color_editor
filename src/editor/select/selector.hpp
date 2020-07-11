@@ -11,12 +11,18 @@ namespace select {
 
 class selector : public QWidget {
 	Q_OBJECT
+	
 public:
 	selector(QWidget *parent, QString name_in);
-	QString name;
+	const QString name();
 	virtual QRegion select(const QImage &image) const = 0;
+	
 protected:
 	QGridLayout *options;
+	
+private:
+	const QString selector_name;
+	
 }; // selector
 
 } // select

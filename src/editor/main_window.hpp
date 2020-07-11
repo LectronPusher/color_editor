@@ -19,6 +19,7 @@ public:
 	
 private slots:
 	void select_points();
+	void effect_altered();
 	
 private:
 	// model

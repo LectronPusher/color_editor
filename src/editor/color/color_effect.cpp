@@ -4,11 +4,15 @@ namespace editor {
 namespace color {
 
 color_effect::color_effect(QWidget *parent, QString name_in)
-: QWidget(parent), name(name_in){
+: QWidget(parent), effect_name(name_in){
 	options = new QGridLayout;
-	options->setContentsMargins(0, 0, 0, 0);
 	setLayout(options);
 }
+
+const QString color_effect::name() {
+	return effect_name;
+}
+
 
 } // color
 } // editor

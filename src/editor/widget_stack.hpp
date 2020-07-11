@@ -31,7 +31,7 @@ public:
 	// add a new T to the bottom of the stack and the box
 	void add(T *new_item) {
 		stack->addWidget(new_item);
-		box->addItem(new_item->name);
+		box->addItem(new_item->name());
 	}
 	
 	// return the active item in the stack
