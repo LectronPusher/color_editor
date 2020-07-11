@@ -3,8 +3,7 @@
 namespace editor {
 namespace select {
 
-selector::selector(QWidget *parent, QString name_in)
-: QWidget(parent), selector_name(name_in){
+selector::selector(QString name_in) : selector_name(name_in) {
 	options = new QGridLayout;
 	setLayout(options);
 }

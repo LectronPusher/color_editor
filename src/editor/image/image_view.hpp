@@ -18,6 +18,7 @@ public:
 	QSize minimumSizeHint() const override;
 	const QImage get_image() const;
 	void set_mask(const QImage &new_mask, const QRegion &region);
+	void apply_mask();
 	
 public slots:
 	void open_image(QString filepath = QString());

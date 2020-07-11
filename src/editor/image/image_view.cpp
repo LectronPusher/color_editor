@@ -31,6 +31,10 @@ void image_view::set_mask(const QImage &new_mask, const QRegion &region) {
 	image_modified = true;
 }
 
+void image_view::apply_mask() {
+	base->apply_mask();
+}
+
 void image_view::open_image(QString filepath) {
 	if (maybe_save()) {
 		if (filepath.isEmpty()) {

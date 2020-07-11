@@ -9,21 +9,20 @@
 namespace editor {
 namespace color {
 
-class color_effect : public QWidget {
+class effect : public QWidget {
 	Q_OBJECT
 	
 public:
-	color_effect(QWidget *parent, QString name_in);
+	effect(QString name_in);
 	const QString name() const;
-	
-public slots:
-	virtual QImage create_mask(const QImage &image, const QRect &rect) const = 0;
+	virtual QImage create_mask(const QImage &image, const QRect &rect) = 0;
 	
 signals:
 	void altered();
 	
 protected:
 	QGridLayout *options;
+	virtual void showEvent(QShowEvent *event) override;
 	
 private:
 	const QString effect_name;

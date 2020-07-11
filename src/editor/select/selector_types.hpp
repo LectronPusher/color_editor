@@ -13,9 +13,12 @@ namespace selector_types {
 
 class select_all : public selector {
 public:
-	select_all(QWidget *parent);
-	QRegion select(const QImage &image) const override;
+	select_all();
+	QRegion select(const QImage &image) override;
+	
+private:
 	QCheckBox *select_nothing;
+	
 }; // select_all
 
 } // selector_types

@@ -13,9 +13,9 @@ class selector : public QWidget {
 	Q_OBJECT
 	
 public:
-	selector(QWidget *parent, QString name_in);
+	selector(QString name_in);
 	const QString name() const;
-	virtual QRegion select(const QImage &image) const = 0;
+	virtual QRegion select(const QImage &image) = 0;
 	
 protected:
 	QGridLayout *options;

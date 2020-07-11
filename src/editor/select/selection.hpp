@@ -17,6 +17,7 @@ public:
 private:
 	QRegion selected_region;
 	QRegion excluded_region;
+	QRegion combined_region;
 	
 }; // selection
 
