@@ -6,8 +6,6 @@
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QToolButton>
-#include <QImage>
-#include <QRegion>
 #include <QDebug>
 
 namespace editor {
@@ -42,7 +40,7 @@ main_window::main_window(QWidget *parent) : QWidget(parent) {
 	view->open_image("/home/ian/all/coding/c++/color_editor/data/mantis300.jpg");
 }
 
-void main_window::setup_image_panel(QVBoxLayout *image_panel) {
+void main_window::setup_image_panel(QVBoxLayout *panel_layout) {
 	view = new image::image_view;
 	
 	auto open_b = new QToolButton;
@@ -72,16 +70,15 @@ void main_window::setup_image_panel(QVBoxLayout *image_panel) {
 	image_buttons->addWidget(zoom_out_b);
 	image_buttons->addWidget(reset_zoom_b);
 	
-	image_panel->addLayout(image_buttons);
-	image_panel->setAlignment(image_buttons, Qt::AlignLeft);
-	image_panel->addWidget(view);
+	panel_layout->addLayout(image_buttons);
+	panel_layout->setAlignment(image_buttons, Qt::AlignLeft);
+	panel_layout->addWidget(view);
 }
 
-void main_window::setup_select_panel(QVBoxLayout *select_panel) {
+void main_window::setup_select_panel(QVBoxLayout *panel_layout) {
 	selector_stack = new widget_stack<select::selector>;
 	selector_stack->add(new select::selector_types::select_all);
 	
-	// common buttons for all selectors
 	auto exclude_b = new QToolButton;
 	exclude_b->setText("Exclude");
 	auto select_b = new QToolButton;
@@ -102,35 +99,35 @@ void main_window::setup_select_panel(QVBoxLayout *select_panel) {
 	hbox->addWidget(exclude_b);
 	hbox->addWidget(select_b);
 	
-	select_panel->addWidget(selector_stack);
-	select_panel->addLayout(hbox);
-	select_panel->addWidget(clear_b);
-	select_panel->setAlignment(clear_b, Qt::AlignRight);
+	panel_layout->addWidget(selector_stack);
+	panel_layout->addLayout(hbox);
+	panel_layout->addWidget(clear_b);
+	panel_layout->setAlignment(clear_b, Qt::AlignRight);
 }
 
-void main_window::setup_color_panel(QVBoxLayout *color_panel) {
+void main_window::setup_color_panel(QVBoxLayout *panel_layout) {
 	effect_stack = new widget_stack<color::effect>;
 	effect_stack->add(new color::effect_types::solid_color);
 	effect_stack->add(new color::effect_types::gradient);
 	auto store_b = new QToolButton;
-	store_b->setText("Save Effect");
+	store_b->setText("Save Effect to Image");
 	
 	for (int i = 0; i < effect_stack->count(); ++i) {
 		connect(effect_stack->at(i), &color::effect::altered,
 				this, &main_window::effect_altered);
 	}
 	connect(store_b, &QToolButton::clicked, view, [=](){
-		view->apply_mask(); 
+		view->base()->apply_mask(); 
 		selection.clear();
 	});
 	
-	color_panel->addWidget(effect_stack);
-	color_panel->addWidget(store_b);
-	color_panel->setAlignment(store_b, Qt::AlignRight);
+	panel_layout->addWidget(effect_stack);
+	panel_layout->addWidget(store_b);
+	panel_layout->setAlignment(store_b, Qt::AlignRight);
 }
 
 void main_window::select_points() {
-	const QImage &image = view->get_image();
+	const QImage &image = view->base()->image();
 	if (!image.isNull()) {
 		QRegion new_selection = selector_stack->active()->select(image);
 		selection.add(new_selection);
@@ -139,13 +136,17 @@ void main_window::select_points() {
 }
 
 void main_window::effect_altered() {
-	const QImage &image = view->get_image();
-	if (!image.isNull()) {
-		QRegion region = selection.selected();
-		QImage mask =
-			effect_stack->active()->create_mask(image, region.boundingRect());
-		view->set_mask(mask, region);
-	}
+	const QImage &image = view->base()->image();
+	QRegion region = selection.selected();
+	QImage mask = effect_stack->active()->create_mask(image, region.boundingRect());
+	view->base()->set_mask(mask, region);
+}
+
+void main_window::closeEvent(QCloseEvent *event) {
+	if (view->modifications_resolved())
+		event->accept();
+	else
+		event->ignore();
 }
 
 } // editor

@@ -7,6 +7,7 @@
 #include "color/effect.hpp"
 
 #include <QWidget>
+#include <QCloseEvent>
 #include <QVBoxLayout>
 
 namespace editor {
@@ -17,9 +18,12 @@ class main_window : public QWidget {
 public:
 	main_window(QWidget *parent = nullptr);
 	
-private slots:
+public slots:
 	void select_points();
 	void effect_altered();
+	
+protected:
+	void closeEvent(QCloseEvent *event);
 	
 private:
 	// stores the image and handles rendering and mouse input for the image
@@ -31,9 +35,9 @@ private:
 	// stores the available color effects and their algorithms
 	widget_stack<color::effect> *effect_stack;
 	
-	void setup_image_panel(QVBoxLayout *image_panel);
-	void setup_select_panel(QVBoxLayout *select_panel);
-	void setup_color_panel(QVBoxLayout *color_panel);
+	void setup_image_panel(QVBoxLayout *panel_layout);
+	void setup_select_panel(QVBoxLayout *panel_layout);
+	void setup_color_panel(QVBoxLayout *panel_layout);
 	
 }; // main_window
 

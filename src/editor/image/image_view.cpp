@@ -11,32 +11,33 @@ namespace image {
 
 image_view::image_view(QWidget *parent) : QGraphicsView(parent) {
 	setScene(new QGraphicsScene(this));
+	_base = new image_base(QImage());
+	scene()->addItem(_base);
 	setBackgroundBrush(Qt::darkGray);
 }
 
-QSize image_view::minimumSizeHint() const {
-	return QSize(304, 304);
+image_base *image_view::base() {
+	return _base;
 }
 
-const QImage image_view::get_image() const {
-	if (has_image)
-		return base->get_image();
-	else
-		return QImage();
-}
-
-void image_view::set_mask(const QImage &new_mask, const QRegion &region) {
-	base->set_mask(new_mask, region);
-	scene()->update(region.boundingRect());
-	image_modified = true;
-}
-
-void image_view::apply_mask() {
-	base->apply_mask();
+bool image_view::modifications_resolved() {
+	if (_base->has_image() && _base->is_modified()) {
+		auto dialog_ans = QMessageBox::warning(
+			this,
+			"Unsaved Changes", 
+			"The image has been modified.\nDo you want to save your changes?",
+			QMessageBox::Save | QMessageBox::Discard | QMessageBox::Cancel
+		);
+		if (dialog_ans == QMessageBox::Cancel)
+			return false;
+		else if (dialog_ans == QMessageBox::Save)
+			save_as();
+	}
+	return true;
 }
 
 void image_view::open_image(QString filepath) {
-	if (maybe_save()) {
+	if (modifications_resolved()) {
 		if (filepath.isEmpty()) {
 			filepath = QFileDialog::getOpenFileName(
 				this,
@@ -45,10 +46,9 @@ void image_view::open_image(QString filepath) {
 				"Image Files (*.png *.jpg *.bmp)"
 			);
 		}
-		QImage image;
 		if (!filepath.isEmpty()) {
 			old_file = QFileInfo(filepath);
-			image = QImage(filepath);
+			QImage image = QImage(filepath);
 			if (!image.isNull())
 				set_image(image);
 			else
@@ -58,7 +58,7 @@ void image_view::open_image(QString filepath) {
 }
 
 void image_view::save_as() {
-	if (has_image) {
+	if (_base->has_image()) {
 		QString filepath = QFileDialog::getSaveFileName(
 			this,
 			"Save As",
@@ -66,28 +66,12 @@ void image_view::save_as() {
 			"Image Files (*.png *.jpg *.bmp);;All Files (*)"
 		);
 		if (!filepath.isEmpty()) {
-			QImage image = base->apply_mask();
-			image_modified = false;
+			QImage image = _base->apply_mask();
 			image.save(filepath);
+			set_image(image);
 			old_file = QFileInfo(filepath);
 		}
 	}
-}
-
-bool image_view::maybe_save() {
-	if (has_image && image_modified) {
-		auto dialog_ans = QMessageBox::warning(
-			this,
-			"Unsaved Changes", 
-			"The image has been modified.\nDo you want to save your changes?",
-			QMessageBox::Save | QMessageBox::Discard | QMessageBox::Cancel
-		);
-		if (dialog_ans == QMessageBox::Save)
-			save_as();
-		else if (dialog_ans == QMessageBox::Cancel)
-			return false;
-	}
-	return true;
 }
 
 void image_view::zoom_in() {
@@ -103,25 +87,20 @@ void image_view::reset_zoom() {
 }
 
 void image_view::set_image(const QImage &image) {
-	// delete the old image if there was one
-	if (has_image) {
-		scene()->removeItem(base);
-		delete base;
-	}
+	// destroy old, create new
+	scene()->removeItem(_base);
+	delete _base;
+	_base = new image_base(image);
+	scene()->addItem(_base);
 	
-	// add the new image and update variables
-	base = new image_base(image);
-	has_image = true;
-	image_modified = false;
-	scene()->addItem(base);
-	
-	// reset the scene rectangle and zoom
+	// update visuals
 	reset_zoom();
-	scene()->setSceneRect(base->boundingRect());
-	updateSceneRect(base->boundingRect());
+	scene()->setSceneRect(_base->boundingRect());
 	
-	// resize the image if it's larger than the viewport, handles scrollbars
-	if (image.size().boundedTo(viewport()->size()) != image.size()) {
+	// scale down the image if larger than the viewport, handle scrollbar bug
+	QSize i_size = image.size();
+	QSize v_size = viewport()->size();
+	if (i_size.width() > v_size.width() || i_size.height() > v_size.height()) {
 		setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
 		setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
 		

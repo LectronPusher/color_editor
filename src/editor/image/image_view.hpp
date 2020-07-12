@@ -15,24 +15,19 @@ class image_view : public QGraphicsView {
 	
 public:
 	image_view(QWidget *parent = nullptr);
-	QSize minimumSizeHint() const override;
-	const QImage get_image() const;
-	void set_mask(const QImage &new_mask, const QRegion &region);
-	void apply_mask();
+	image_base *base();
+	bool modifications_resolved();
 	
 public slots:
 	void open_image(QString filepath = QString());
 	void save_as();
-	bool maybe_save();
 	
 	void zoom_in();
 	void zoom_out();
 	void reset_zoom();
 	
 private:
-	image_base *base;
-	bool has_image = false;
-	bool image_modified = false;
+	image_base *_base;
 	const qreal scale_factor = 1.2;
 	
 	QFileInfo old_file = QFileInfo("/home/ian/all/coding/c++/color_editor/data/");
