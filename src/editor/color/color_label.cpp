@@ -6,8 +6,8 @@
 namespace editor {
 namespace color {
 
-color_label::color_label(QWidget *parent, QColor starting_color, bool interactive)
-: QFrame(parent), is_interactive(interactive), fill_color(starting_color) {
+color_label::color_label(QWidget *parent, QColor starting_color)
+: QFrame(parent), fill_color(starting_color) {
 	QWidget::resize(25, 25);
 	setFrameStyle(QFrame::Panel | QFrame::Sunken);
 	setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
@@ -36,8 +36,13 @@ void color_label::paintEvent(QPaintEvent *event) {
 }
 
 void color_label::mousePressEvent(QMouseEvent *) {
-	if(is_interactive)
+	if (is_interactive)
 		open_dialog();
+}
+
+void color_label::hideEvent(QHideEvent *event) {
+	emit hidden(0);
+	QFrame::hideEvent(event);
 }
 
 void color_label::open_dialog() {
@@ -47,6 +52,7 @@ void color_label::open_dialog() {
 	
 	connect(dialog, &QColorDialog::currentColorChanged,
 			this, &color_label::set_color);
+	connect(this, &color_label::hidden, dialog, &QDialog::done);
 	
 	dialog->show();
 }

@@ -10,7 +10,7 @@ namespace effect_types {
 
 // solid_color
 solid_color::solid_color() : effect("Solid Color") {
-	changeable_color = new color_label(this, Qt::red, true);
+	changeable_color = new color_label(this, Qt::red);
 	auto label = new QLabel;
 	label->setText("Color:");
 	
@@ -31,8 +31,8 @@ QImage solid_color::create_mask(const QImage &, const QRect &rect) {
 
 // gradient
 gradient::gradient() : effect("Gradient") {
-	color_1 = new color_label(this, Qt::red, true);
-	color_2 = new color_label(this, Qt::blue, true);
+	color_1 = new color_label(this, Qt::red);
+	color_2 = new color_label(this, Qt::blue);
 	auto label_1 = new QLabel;
 	label_1->setText("Color 1:");
 	auto label_2 = new QLabel;
