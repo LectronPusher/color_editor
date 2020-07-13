@@ -87,10 +87,10 @@ void main_window::setup_select_panel(QVBoxLayout *panel_layout) {
 	clear_b->setText("Clear Selection");
 	
 	connect(exclude_b, &QToolButton::clicked,
-			this, [=](){ selection.next_selection_type = select::exclude; });
+			this, [=](){ selection.set_next(select::selection::exclude); });
 	connect(exclude_b, &QToolButton::clicked, this, &main_window::select_points);
 	connect(select_b, &QToolButton::clicked,
-			this, [=](){ selection.next_selection_type = select::select; });
+			this, [=](){ selection.set_next(select::selection::select); });
 	connect(select_b, &QToolButton::clicked, this, &main_window::select_points);
 	connect(clear_b, &QToolButton::clicked, this, [=](){ selection.clear(); });
 	connect(clear_b, &QToolButton::clicked, this, &main_window::effect_altered);
@@ -102,7 +102,7 @@ void main_window::setup_select_panel(QVBoxLayout *panel_layout) {
 	panel_layout->addWidget(selector_stack);
 	panel_layout->addLayout(hbox);
 	panel_layout->addWidget(clear_b);
-	panel_layout->setAlignment(clear_b, Qt::AlignRight);
+	panel_layout->setAlignment(clear_b, Qt::AlignCenter);
 }
 
 void main_window::setup_color_panel(QVBoxLayout *panel_layout) {
@@ -123,7 +123,7 @@ void main_window::setup_color_panel(QVBoxLayout *panel_layout) {
 	
 	panel_layout->addWidget(effect_stack);
 	panel_layout->addWidget(store_b);
-	panel_layout->setAlignment(store_b, Qt::AlignRight);
+	panel_layout->setAlignment(store_b, Qt::AlignCenter);
 }
 
 void main_window::select_points() {
