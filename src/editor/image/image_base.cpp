@@ -47,7 +47,7 @@ void image_base::set_mask(const QImage &new_mask, const QRegion &region) {
 	mask = new_mask;
 	mask_region = region;
 	scene()->update(mask_region.boundingRect());
-}	
+}
 
 } // image
 } // editor
