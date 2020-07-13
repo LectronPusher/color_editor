@@ -1,6 +1,7 @@
 #include "main_window.hpp"
 #include "select/selector_types.hpp"
 #include "color/effect_types.hpp"
+#include "mouse_mode.hpp"
 
 #include <QGridLayout>
 #include <QHBoxLayout>
@@ -29,7 +30,6 @@ main_window::main_window(QWidget *parent) : QWidget(parent) {
 	setup_color_panel(tool_panels);
 	// requires tool_panel_wrapper, doesn't work without it
 	tool_panels->setSizeConstraint(QLayout::SetFixedSize);
-	
 	
 	auto all_panels = new QHBoxLayout;
 	all_panels->addLayout(image_panel);
@@ -69,6 +69,12 @@ void main_window::setup_image_panel(QVBoxLayout *panel_layout) {
 	image_buttons->addWidget(zoom_in_b);
 	image_buttons->addWidget(zoom_out_b);
 	image_buttons->addWidget(reset_zoom_b);
+	image_buttons->addWidget(new mouse_mode(mouse_mode::pan, "Pan"));
+	image_buttons->addWidget(new mouse_mode(mouse_mode::pan, "Pan2"));
+	image_buttons->addWidget(new mouse_mode(mouse_mode::point, "Point"));
+	image_buttons->addWidget(new mouse_mode(mouse_mode::point, "Point2"));
+	image_buttons->addWidget(new mouse_mode(mouse_mode::color, "Color"));
+	image_buttons->addWidget(new mouse_mode(mouse_mode::color, "Color2"));
 	
 	panel_layout->addLayout(image_buttons);
 	panel_layout->setAlignment(image_buttons, Qt::AlignLeft);

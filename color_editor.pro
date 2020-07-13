@@ -6,6 +6,7 @@ INCLUDEPATH += src/
 
 SOURCES += src/main.cpp \
 		   src/editor/main_window.cpp \
+		   src/editor/mouse_mode.cpp \
 		   src/editor/image/image_view.cpp \
 		   src/editor/image/image_base.cpp \
 		   src/editor/select/selector.cpp \
@@ -17,6 +18,7 @@ SOURCES += src/main.cpp \
 
 HEADERS += src/editor/main_window.hpp \
 		   src/editor/widget_stack.hpp \
+		   src/editor/mouse_mode.hpp \
 		   src/editor/image/image_view.hpp \
 		   src/editor/image/image_base.hpp \
 		   src/editor/select/selector.hpp \

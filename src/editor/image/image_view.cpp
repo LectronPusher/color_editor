@@ -1,4 +1,5 @@
 #include "image_view.hpp"
+#include "../mouse_mode.hpp"
 
 #include <QToolButton>
 #include <QFileDialog>
@@ -17,7 +18,9 @@ image_view::image_view(QWidget *parent) : QGraphicsView(parent) {
 	_base = new image_base(QImage());
 	scene()->addItem(_base);
 	
-	set_mouse_mode(pan);
+	mouse_mode::set_view(this);
+	update_mouse_mode();
+	
 	setBackgroundBrush(Qt::darkGray);
 }
 
@@ -70,25 +73,6 @@ QCursor setup_circle_cursor() {
 	return QCursor(pixels, mask);
 }
 
-void image_view::set_mouse_mode(image_view::mouse_mode new_mode) {
-	
-	switch (new_mode) {
-	case pan:
-		setDragMode(QGraphicsView::ScrollHandDrag);
-		break;
-	case color:
-		setDragMode(QGraphicsView::NoDrag);
-		viewport()->setCursor(Qt::CrossCursor);
-		break;
-	case point:
-		static QCursor circle_cursor = setup_circle_cursor();
-		setDragMode(QGraphicsView::NoDrag);
-		viewport()->setCursor(circle_cursor);
-		
-	}
-	mode = new_mode;
-}
-
 void image_view::open_image(QString filepath) {
 	if (modifications_resolved()) {
 		if (filepath.isEmpty()) {
@@ -139,8 +123,26 @@ void image_view::reset_zoom() {
 	setTransform(QTransform());
 }
 
+void image_view::update_mouse_mode() {
+	static QCursor circle_cursor = setup_circle_cursor();
+	
+	switch (mouse_mode::current()) {
+		case mouse_mode::pan:
+			setDragMode(QGraphicsView::ScrollHandDrag);
+			break;
+		case mouse_mode::color:
+		case mouse_mode::point:
+			setDragMode(QGraphicsView::NoDrag);
+			viewport()->setCursor(circle_cursor);
+			break;
+		case mouse_mode::none:
+			setDragMode(QGraphicsView::NoDrag);
+			viewport()->setCursor(Qt::ArrowCursor);
+	}
+}
+
 void image_view::mouseMoveEvent(QMouseEvent *event) {
-	if (mode == point) {
+	if (mouse_mode::current() == mouse_mode::point) {
 		QPoint point = mapToScene(event->pos()).toPoint();
 		if (_base->boundingRect().contains(point))
 			emit point_selected(point);
@@ -149,10 +151,13 @@ void image_view::mouseMoveEvent(QMouseEvent *event) {
 }
 
 void image_view::mousePressEvent(QMouseEvent * event) {
-	if (mode == color && event->button() == Qt::LeftButton) {
+	if (mouse_mode::current() == mouse_mode::color
+		&& event->button() == Qt::LeftButton) {
 		QPoint point = mapToScene(event->pos()).toPoint();
-		if (_base->boundingRect().contains(point))
+		if (_base->boundingRect().contains(point)) {
 			emit color_selected(_base->image().pixelColor(point));
+			mouse_mode::set(mouse_mode::none);
+		}
 	}
 	QGraphicsView::mousePressEvent(event);
 }
