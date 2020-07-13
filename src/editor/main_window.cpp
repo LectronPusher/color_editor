@@ -70,12 +70,7 @@ void main_window::setup_image_panel(QVBoxLayout *panel_layout) {
 	image_buttons->addWidget(zoom_out_b);
 	image_buttons->addWidget(reset_zoom_b);
 	image_buttons->addWidget(new mouse_mode(mouse_mode::pan, "Pan"));
-	image_buttons->addWidget(new mouse_mode(mouse_mode::pan, "Pan2"));
-	image_buttons->addWidget(new mouse_mode(mouse_mode::point, "Point"));
-	image_buttons->addWidget(new mouse_mode(mouse_mode::point, "Point2"));
-	image_buttons->addWidget(new mouse_mode(mouse_mode::color, "Color"));
-	image_buttons->addWidget(new mouse_mode(mouse_mode::color, "Color2"));
-	
+
 	panel_layout->addLayout(image_buttons);
 	panel_layout->setAlignment(image_buttons, Qt::AlignLeft);
 	panel_layout->addWidget(view);
