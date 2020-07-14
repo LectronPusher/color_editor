@@ -42,6 +42,7 @@ main_window::main_window(QWidget *parent) : QWidget(parent) {
 
 void main_window::setup_image_panel(QVBoxLayout *panel_layout) {
 	view = new image::image_view;
+	mouse_mode::set_view(view);
 	
 	auto open_b = new QToolButton;
 	open_b->setText("Open");

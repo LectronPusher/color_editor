@@ -18,9 +18,7 @@ image_view::image_view(QWidget *parent) : QGraphicsView(parent) {
 	_base = new image_base(QImage());
 	scene()->addItem(_base);
 	
-	mouse_mode::set_view(this);
 	update_mouse_mode();
-	
 	setBackgroundBrush(Qt::darkGray);
 }
 
@@ -42,35 +40,6 @@ bool image_view::modifications_resolved() {
 			save_as();
 	}
 	return true;
-}
-
-// creates a mostly transparent cursor of 3 circles, inner 2 black, outer white
-QCursor setup_circle_cursor() {
-	QPoint center(16, 16);
-	int r = 8;
-	
-	QBitmap mask = QBitmap(32, 32);
-	mask.clear();
-	QPainter painter(&mask);
-	painter.setPen(Qt::color1);
-	// idk why, but a QPen of width 3 doesn't work properly, oh well
-	painter.drawEllipse(center, r + 1, r + 1);
-	painter.drawEllipse(center, r, r);
-	painter.drawEllipse(center, r - 1, r - 1);
-	// the circles don't match perfectly, need to fill these 4 points:
-	painter.drawPoint(center + QPoint(6, 6));
-	painter.drawPoint(center + QPoint(6, -6));
-	painter.drawPoint(center + QPoint(-6, 6));
-	painter.drawPoint(center + QPoint(-6, -6));
-	
-	QBitmap pixels = QBitmap(32, 32);
-	pixels.clear();
-	QPainter painter2(&pixels);
-	painter2.setPen(Qt::color1);
-	painter2.drawEllipse(center, r, r);
-	painter2.drawEllipse(center, r - 1, r - 1);
-	
-	return QCursor(pixels, mask);
 }
 
 void image_view::open_image(QString filepath) {
@@ -123,26 +92,55 @@ void image_view::reset_zoom() {
 	setTransform(QTransform());
 }
 
+// creates a mostly transparent cursor of 3 circles, inner 2 black, outer white
+QCursor setup_circle_cursor() {
+	QPoint center(16, 16);
+	int r = 8;
+	
+	QBitmap mask = QBitmap(32, 32);
+	mask.clear();
+	QPainter painter(&mask);
+	painter.setPen(Qt::color1);
+	// idk why, but a QPen of width 3 doesn't work properly, oh well
+	painter.drawEllipse(center, r + 1, r + 1);
+	painter.drawEllipse(center, r, r);
+	painter.drawEllipse(center, r - 1, r - 1);
+	// the circles don't match perfectly, need to fill these 4 points:
+	painter.drawPoint(center + QPoint(6, 6));
+	painter.drawPoint(center + QPoint(6, -6));
+	painter.drawPoint(center + QPoint(-6, 6));
+	painter.drawPoint(center + QPoint(-6, -6));
+	
+	QBitmap pixels = QBitmap(32, 32);
+	pixels.clear();
+	QPainter painter2(&pixels);
+	painter2.setPen(Qt::color1);
+	painter2.drawEllipse(center, r, r);
+	painter2.drawEllipse(center, r - 1, r - 1);
+	
+	return QCursor(pixels, mask);
+}
+
 void image_view::update_mouse_mode() {
 	static QCursor circle_cursor = setup_circle_cursor();
 	
-	switch (mouse_mode::current()) {
-		case mouse_mode::pan:
-			setDragMode(QGraphicsView::ScrollHandDrag);
-			break;
-		case mouse_mode::color:
-		case mouse_mode::point:
-			setDragMode(QGraphicsView::NoDrag);
-			viewport()->setCursor(circle_cursor);
-			break;
-		case mouse_mode::none:
-			setDragMode(QGraphicsView::NoDrag);
-			viewport()->setCursor(Qt::ArrowCursor);
+	switch (mouse_mode::mode()) {
+	case mouse_mode::none:
+		setDragMode(QGraphicsView::NoDrag);
+		viewport()->setCursor(Qt::ArrowCursor);
+		break;
+	case mouse_mode::pan:
+		setDragMode(QGraphicsView::ScrollHandDrag);
+		break;
+	case mouse_mode::color:
+	case mouse_mode::point:
+		setDragMode(QGraphicsView::NoDrag);
+		viewport()->setCursor(circle_cursor);
 	}
 }
 
 void image_view::mouseMoveEvent(QMouseEvent *event) {
-	if (mouse_mode::current() == mouse_mode::point) {
+	if (mouse_mode::mode() == mouse_mode::point) {
 		QPoint point = mapToScene(event->pos()).toPoint();
 		if (_base->boundingRect().contains(point))
 			emit point_selected(point);
@@ -151,12 +149,12 @@ void image_view::mouseMoveEvent(QMouseEvent *event) {
 }
 
 void image_view::mousePressEvent(QMouseEvent * event) {
-	if (mouse_mode::current() == mouse_mode::color
+	if (mouse_mode::mode() == mouse_mode::color
 		&& event->button() == Qt::LeftButton) {
 		QPoint point = mapToScene(event->pos()).toPoint();
 		if (_base->boundingRect().contains(point)) {
 			emit color_selected(_base->image().pixelColor(point));
-			mouse_mode::set(mouse_mode::none);
+			mouse_mode::set_current_mode(mouse_mode::none);
 		}
 	}
 	QGraphicsView::mousePressEvent(event);
