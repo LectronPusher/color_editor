@@ -19,7 +19,7 @@ public:
 	main_window(QWidget *parent = nullptr);
 	
 public slots:
-	void select_points();
+	void region_selected(select::selection::select_region region);
 	void effect_altered();
 	
 protected:

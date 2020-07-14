@@ -1,31 +1,28 @@
 #include "mouse_mode.hpp"
 
+#include <QDebug>
+
 namespace editor {
 
 mouse_mode::mode_enum mouse_mode::global_mode = mouse_mode::none;
+int mouse_mode::index = -1;
 image::image_view *mouse_mode::view = nullptr;
-mouse_mode *mouse_mode::first = nullptr;
+QList<mouse_mode *> mouse_mode::all_list = QList<mouse_mode *>();
 
 mouse_mode::mouse_mode(mode_enum new_mode, QString text)
-: QCheckBox(nullptr), local_mode(new_mode) {
-	setText(text);
-	update_checked_state();
-	
+: QCheckBox(text), local_mode(new_mode), local_index(all_list.size()) {
+	all_list.push_back(this);
 	connect(this, &QCheckBox::stateChanged, this, &mouse_mode::maybe_set);
-	
-	if (first == nullptr)
-		first = this;
-	
-	connect(first, &mouse_mode::global_mode_changed,
-			this, &mouse_mode::update_checked_state);
 }
 
 void mouse_mode::set_global_mode(mouse_mode::mode_enum new_mode) {
-	global_mode = new_mode;
-	if (view)
-		view->update_mouse_mode();
-	if (first)
-		emit first->global_mode_changed();
+	if (global_mode != new_mode) {
+		global_mode = new_mode;
+		if (view != nullptr)
+			view->update_mouse_mode();
+	}
+	if (new_mode == none && index != -1)
+		all_list.at(index)->setCheckState(Qt::Unchecked);
 }
 
 mouse_mode::mode_enum mouse_mode::mode() {
@@ -36,20 +33,22 @@ void mouse_mode::set_view(image::image_view *new_view) {
 	view = new_view;
 }
 
+void mouse_mode::hideEvent(QHideEvent *) {
+	maybe_set(Qt::Unchecked);
+}
+
 void mouse_mode::maybe_set(int state) {
-	if (state == Qt::Checked && mode() != local_mode)
+	if (state == Qt::Checked) {
+		if (index != -1 && index != local_index)
+			all_list.at(index)->setCheckState(Qt::Unchecked);
+		index = local_index;
 		set_global_mode(local_mode);
-	else if (state == Qt::Unchecked && mode() == local_mode)
-		set_global_mode(none);
-}
-
-void mouse_mode::update_checked_state() {
-	setChecked(mode() == local_mode && isVisible());
-}
-
-void mouse_mode::hideEvent(QHideEvent *event) {
-	if (mode() == local_mode)
-		set_global_mode(none);
+	} else if (state == Qt::Unchecked) {
+		if (index == local_index) {
+			index = -1;	
+			set_global_mode(none);
+		}
+	}
 }
 
 } // editor

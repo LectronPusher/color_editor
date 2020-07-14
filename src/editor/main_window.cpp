@@ -80,29 +80,24 @@ void main_window::setup_image_panel(QVBoxLayout *panel_layout) {
 void main_window::setup_select_panel(QVBoxLayout *panel_layout) {
 	selector_stack = new widget_stack<select::selector>;
 	selector_stack->add(new select::selector_types::select_all);
+	selector_stack->add(new select::selector_types::draw);
 	
-	auto exclude_b = new QToolButton;
-	exclude_b->setText("Exclude");
-	auto select_b = new QToolButton;
-	select_b->setText("Select");
 	auto clear_b = new QToolButton;
 	clear_b->setText("Clear Selection");
 	
-	connect(exclude_b, &QToolButton::clicked,
-			this, [=](){ selection.set_next(select::selection::exclude); });
-	connect(exclude_b, &QToolButton::clicked, this, &main_window::select_points);
-	connect(select_b, &QToolButton::clicked,
-			this, [=](){ selection.set_next(select::selection::select); });
-	connect(select_b, &QToolButton::clicked, this, &main_window::select_points);
+	connect(view, &image::image_view::base_image_changed,
+			selector_stack->at(0), &select::selector::update_image);
+	for (int i = 0; i < selector_stack->count(); ++i) {
+		select::selector *sel = selector_stack->at(i);
+		connect(sel, &select::selector::region_selected,
+				this, &main_window::region_selected);
+		connect(view, &image::image_view::point_selected,
+				sel, &select::selector::point_selected);
+	}
 	connect(clear_b, &QToolButton::clicked, this, [=](){ selection.clear(); });
 	connect(clear_b, &QToolButton::clicked, this, &main_window::effect_altered);
 	
-	auto hbox = new QHBoxLayout;
-	hbox->addWidget(exclude_b);
-	hbox->addWidget(select_b);
-	
 	panel_layout->addWidget(selector_stack);
-	panel_layout->addLayout(hbox);
 	panel_layout->addWidget(clear_b);
 	panel_layout->setAlignment(clear_b, Qt::AlignCenter);
 }
@@ -128,13 +123,9 @@ void main_window::setup_color_panel(QVBoxLayout *panel_layout) {
 	panel_layout->setAlignment(store_b, Qt::AlignCenter);
 }
 
-void main_window::select_points() {
-	const QImage &image = view->base()->image();
-	if (!image.isNull()) {
-		QRegion new_selection = selector_stack->active()->select(image);
-		selection.add(new_selection);
-		effect_altered();
-	}
+void main_window::region_selected(select::selection::select_region region) {
+	selection.add(region);
+	effect_altered();
 }
 
 void main_window::effect_altered() {

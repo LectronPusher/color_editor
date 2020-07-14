@@ -31,7 +31,6 @@ public slots:
 signals:
 	void base_image_changed(QImage new_image);
 	void point_selected(QPoint point);
-	void color_selected(QColor color);
 	
 protected:
 	void mouseMoveEvent(QMouseEvent *event);
@@ -44,6 +43,7 @@ private:
 	QFileInfo old_file = QFileInfo("/home/ian/all/coding/c++/color_editor/data/");
 // 	QFileInfo old_file = QFileInfo(QDir::homePath());
 	
+	QPoint scene_point(const QPoint &pos);
 	void set_image(const QImage &image);
 	
 }; // image_view

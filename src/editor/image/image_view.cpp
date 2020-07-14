@@ -132,7 +132,7 @@ void image_view::update_mouse_mode() {
 	case mouse_mode::pan:
 		setDragMode(QGraphicsView::ScrollHandDrag);
 		break;
-	case mouse_mode::color:
+	case mouse_mode::single_point:
 	case mouse_mode::point:
 		setDragMode(QGraphicsView::NoDrag);
 		viewport()->setCursor(circle_cursor);
@@ -141,7 +141,7 @@ void image_view::update_mouse_mode() {
 
 void image_view::mouseMoveEvent(QMouseEvent *event) {
 	if (mouse_mode::mode() == mouse_mode::point) {
-		QPoint point = mapToScene(event->pos()).toPoint();
+		QPoint point = scene_point(event->pos());
 		if (_base->boundingRect().contains(point))
 			emit point_selected(point);
 	}
@@ -149,15 +149,26 @@ void image_view::mouseMoveEvent(QMouseEvent *event) {
 }
 
 void image_view::mousePressEvent(QMouseEvent * event) {
-	if (mouse_mode::mode() == mouse_mode::color
-		&& event->button() == Qt::LeftButton) {
-		QPoint point = mapToScene(event->pos()).toPoint();
+	if (event->button() == Qt::LeftButton) {
+		QPoint point = scene_point(event->pos());
 		if (_base->boundingRect().contains(point)) {
-			emit color_selected(_base->image().pixelColor(point));
-			mouse_mode::set_current_mode(mouse_mode::none);
+			switch(mouse_mode::mode()) {
+			case mouse_mode::single_point:
+				mouse_mode::set_global_mode(mouse_mode::none);
+				// fall through
+			case mouse_mode::point:
+				emit point_selected(point);
+			default:
+				break;
+			}
 		}
 	}
 	QGraphicsView::mousePressEvent(event);
+}
+
+QPoint image_view::scene_point(const QPoint &pos) {
+	QPointF pf = mapToScene(pos);
+	return QPoint(pf.x(), pf.y());
 }
 
 void image_view::set_image(const QImage &image) {
