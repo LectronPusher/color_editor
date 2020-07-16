@@ -18,9 +18,6 @@ public:
 	static mode_enum mode();
 	static void set_view(image::image_view *new_view);
 	
-protected:
-	void hideEvent(QHideEvent *event) override;
-	
 private slots:
 	void maybe_set(int state);
 	

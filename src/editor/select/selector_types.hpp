@@ -6,6 +6,7 @@
 #include <QCheckBox>
 #include <QButtonGroup>
 #include <QSpinBox>
+#include <QComboBox>
 
 namespace editor {
 namespace select {
@@ -22,6 +23,7 @@ private:
 	
 }; // select_all
 
+
 class draw : public selector {
 public:
 	draw();
@@ -34,6 +36,7 @@ private:
 	mouse_mode *select_mm;
 	QButtonGroup *group;
 	QSpinBox *side_length;
+	QComboBox *region_type;
 	
 	QRect create_rect(const QPoint &point);
 	

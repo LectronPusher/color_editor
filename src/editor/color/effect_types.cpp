@@ -29,6 +29,7 @@ image::mask solid_color::create_mask(const QImage &, const QRegion &region) {
 }
 // end solid_color
 
+
 // gradient
 gradient::gradient() : effect("Gradient") {
 	color_1 = new color_label(this, Qt::cyan);
@@ -77,7 +78,8 @@ QGradient gradient::create_gradient(const QSize &size) {
 }
 // end gradient
 
-// transparent_override
+
+// transparent
 transparent::transparent() : effect("Transparent Color") {
 	trans_label = new color_label(this, Qt::magenta);
 	trans_label->enable_transparency();
@@ -87,8 +89,8 @@ transparent::transparent() : effect("Transparent Color") {
 	auto spinbox = new QSpinBox;
 	spinbox->setRange(0, 255);
 	override_box = new QComboBox;
-	override_box->addItem("Replace", QVariant(true));
 	override_box->addItem("Layer Over", QVariant(false));
+	override_box->addItem("Replace", QVariant(true));
 	
 	connect(trans_label, &color_label::color_changed, this, &effect::altered);
 	connect(slider, &QSlider::valueChanged,
@@ -99,8 +101,7 @@ transparent::transparent() : effect("Transparent Color") {
 	connect(override_box, QOverload<int>::of(&QComboBox::currentIndexChanged),
 			this, &effect::altered);
 	
-	slider->setValue(1);
-	slider->setValue(0);
+	slider->setValue(80);
 	
 	options->addWidget(new QLabel("Color:"), 0, 0);
 	options->addWidget(trans_label, 0, 1);
@@ -125,7 +126,7 @@ image::mask transparent::create_mask(const QImage &, const QRegion &region) {
 	bool paint_over = override_box->currentData().value<bool>();
 	return {img, region, paint_over};
 }
-// end transparent_override
+// end transparent
 
 } // effect_types
 } // color

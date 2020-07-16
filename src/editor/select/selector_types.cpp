@@ -3,6 +3,8 @@
 #include <QToolButton>
 #include <QLabel>
 
+Q_DECLARE_METATYPE(QRegion::RegionType);
+
 namespace editor {
 namespace select {
 namespace selector_types {
@@ -35,21 +37,26 @@ QRegion select_all::select() {
 }
 // end select_all
 
+
 // draw
 draw::draw() : selector("Draw") {
 	auto label = new QLabel("Size:");
 	side_length = new QSpinBox;
-	side_length->setRange(1, 100);
+	side_length->setRange(1, 1000);
 	side_length->setValue(20);
+	region_type = new QComboBox;
+	region_type->addItem("Circle", QRegion::Ellipse);
+	region_type->addItem("Square", QRegion::Rectangle);
 	
 	exclude_mm = new mouse_mode(mouse_mode::point, "Exclude");
 	select_mm = new mouse_mode(mouse_mode::point, "Select");
 	
 	options->addWidget(label, 0, 0);
 	options->addWidget(side_length, 0, 2);
-	options->addWidget(exclude_mm, 1, 0);
-	options->addWidget(select_mm, 1, 1, 1, 2);
-	options->setRowStretch(2, 1);
+	options->addWidget(region_type, 1, 0, 1, 3);
+	options->addWidget(exclude_mm, 2, 0);
+	options->addWidget(select_mm, 2, 1, 1, 2);
+	options->setRowStretch(3, 1);
 }
 
 void draw::point_selected(const QPoint &point) {
@@ -57,10 +64,12 @@ void draw::point_selected(const QPoint &point) {
 		return;
 	
 	QRect rect = create_rect(point);
-	rect = rect.intersected(image.rect());
+	auto r_type = region_type->currentData().value<QRegion::RegionType>();
+	QRegion new_region(rect, r_type);
+	new_region = new_region.intersected(image.rect());
 	
 	auto s_type = (exclude_mm->isChecked()) ? selection::exclude : selection::select;
-	emit selector::region_selected({ QRegion(rect), s_type});
+	emit selector::region_selected({ new_region, s_type});
 }
 
 QRect draw::create_rect(const QPoint &point) {

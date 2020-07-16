@@ -1,7 +1,6 @@
 #include "image_base.hpp"
 
 #include <QGraphicsScene>
-#include <QDebug>
 
 namespace editor{
 namespace image {
@@ -45,7 +44,7 @@ const QImage image_base::apply_mask() {
 
 void image_base::set_mask(const mask &new_mask) {
 	image_mask = new_mask;
-	scene()->update(new_mask.rect());
+	scene()->update(image_mask.rect());
 }
 
 } // image

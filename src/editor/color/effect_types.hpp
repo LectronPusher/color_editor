@@ -21,6 +21,7 @@ private:
 	
 }; // solid_color
 
+
 class gradient : public effect {
 public:
 	gradient();
@@ -35,6 +36,7 @@ private:
 	
 }; // gradient
 
+
 class transparent : public effect {
 public:
 	transparent();
@@ -47,7 +49,7 @@ private:
 	color_label *trans_label;
 	QComboBox *override_box;
 	
-}; // transparent_override
+}; // transparent
 
 } // effect_types
 } // color
