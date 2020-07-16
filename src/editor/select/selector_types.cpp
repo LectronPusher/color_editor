@@ -39,16 +39,16 @@ QRegion select_all::select() {
 draw::draw() : selector("Draw") {
 	auto label = new QLabel("Size:");
 	side_length = new QSpinBox;
-	side_length->setRange(1, 50);
-	side_length->setValue(3);
+	side_length->setRange(1, 100);
+	side_length->setValue(20);
 	
 	exclude_mm = new mouse_mode(mouse_mode::point, "Exclude");
 	select_mm = new mouse_mode(mouse_mode::point, "Select");
 	
 	options->addWidget(label, 0, 0);
-	options->addWidget(side_length, 0, 1);
+	options->addWidget(side_length, 0, 2);
 	options->addWidget(exclude_mm, 1, 0);
-	options->addWidget(select_mm, 1, 1);
+	options->addWidget(select_mm, 1, 1, 1, 2);
 	options->setRowStretch(2, 1);
 }
 
