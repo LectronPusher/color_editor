@@ -15,8 +15,8 @@ public:
 	color_label(QWidget *parent, QColor starting_color = Qt::white);
 	virtual QSize sizeHint() const override;
 	QColor color() const;
-	
-	bool is_interactive = true;
+	void disable_interaction();
+	void enable_transparency();
 	
 public slots:
 	void set_color(const QColor &new_color);
@@ -32,6 +32,8 @@ protected:
 	
 private:
 	QColor fill_color;
+	bool can_be_transparent = false;
+	bool is_interactive = true;
 	
 	void open_dialog();
 	

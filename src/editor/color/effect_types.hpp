@@ -2,6 +2,7 @@
 
 #include "effect.hpp"
 #include "color_label.hpp"
+#include "../image/mask.hpp"
 
 #include <QComboBox>
 #include <QGradient>
@@ -13,7 +14,7 @@ namespace effect_types {
 class solid_color : public effect {
 public:
 	solid_color();
-	QImage create_mask(const QImage &image, const QRect &rect) override;
+	image::mask create_mask(const QImage &image, const QRegion &region) override;
 	
 private:
 	color_label *changeable_color;
@@ -23,7 +24,7 @@ private:
 class gradient : public effect {
 public:
 	gradient();
-	QImage create_mask(const QImage &image, const QRect &rect) override;
+	image::mask create_mask(const QImage &image, const QRegion &region) override;
 	
 private:
 	QComboBox *orient_box;
@@ -33,6 +34,20 @@ private:
 	QGradient create_gradient(const QSize &size);
 	
 }; // gradient
+
+class transparent : public effect {
+public:
+	transparent();
+	image::mask create_mask(const QImage &image, const QRegion &region) override;
+	
+private slots:
+	void set_label_transparency(int value);
+	
+private:
+	color_label *trans_label;
+	QComboBox *override_box;
+	
+}; // transparent_override
 
 } // effect_types
 } // color

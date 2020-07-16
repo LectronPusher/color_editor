@@ -9,6 +9,7 @@ SOURCES += src/main.cpp \
 		   src/editor/mouse_mode.cpp \
 		   src/editor/image/image_view.cpp \
 		   src/editor/image/image_base.cpp \
+		   src/editor/image/mask.cpp \
 		   src/editor/select/selector.cpp \
 		   src/editor/select/selection.cpp \
 		   src/editor/select/selector_types.cpp \
@@ -21,6 +22,7 @@ HEADERS += src/editor/main_window.hpp \
 		   src/editor/mouse_mode.hpp \
 		   src/editor/image/image_view.hpp \
 		   src/editor/image/image_base.hpp \
+		   src/editor/image/mask.hpp \
 		   src/editor/select/selector.hpp \
 		   src/editor/select/selection.hpp \
 		   src/editor/select/selector_types.hpp \

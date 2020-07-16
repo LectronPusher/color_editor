@@ -56,7 +56,7 @@ void main_window::setup_image_panel(QVBoxLayout *panel_layout) {
 	reset_zoom_b->setText("100%");
 	
 	connect(open_b, &QToolButton::clicked, view, [=](){
-		view->open_image(); 
+		view->open_image();
 		selection.clear();
 	});
 	connect(save_as_b, &QToolButton::clicked, view, &image::image_view::save_as);
@@ -105,7 +105,9 @@ void main_window::setup_select_panel(QVBoxLayout *panel_layout) {
 void main_window::setup_color_panel(QVBoxLayout *panel_layout) {
 	effect_stack = new widget_stack<color::effect>;
 	effect_stack->add(new color::effect_types::solid_color);
+	effect_stack->add(new color::effect_types::transparent);
 	effect_stack->add(new color::effect_types::gradient);
+	
 	auto store_b = new QToolButton;
 	store_b->setText("Save Effect to Image");
 	
@@ -130,9 +132,9 @@ void main_window::region_selected(select::selection::select_region region) {
 
 void main_window::effect_altered() {
 	const QImage &image = view->base()->image();
-	QRegion region = selection.selected();
-	QImage mask = effect_stack->active()->create_mask(image, region.boundingRect());
-	view->base()->set_mask(mask, region);
+	const QRegion &region = selection.selected();
+	image::mask mask = effect_stack->active()->create_mask(image, region);
+	view->base()->set_mask(mask);
 }
 
 void main_window::closeEvent(QCloseEvent *event) {

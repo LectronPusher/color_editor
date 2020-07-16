@@ -21,6 +21,14 @@ QColor color_label::color() const {
 	return fill_color;
 }
 
+void color_label::disable_interaction() {
+	is_interactive = false;
+}
+
+void color_label::enable_transparency() {
+	can_be_transparent = true;
+}
+
 void color_label::set_color(const QColor &new_color) {
 	if (new_color.isValid() && fill_color != new_color) {
 		fill_color = new_color;
@@ -49,9 +57,13 @@ void color_label::open_dialog() {
 	auto dialog = new QColorDialog(fill_color, this);
 	dialog->setOption(QColorDialog::DontUseNativeDialog);
 	dialog->setOption(QColorDialog::NoButtons);
+	if (can_be_transparent)
+		dialog->setOption(QColorDialog::ShowAlphaChannel);
 	
 	connect(dialog, &QColorDialog::currentColorChanged,
 			this, &color_label::set_color);
+	connect(this, &color_label::color_changed,
+			dialog, [dialog](const QColor &c){ dialog->setCurrentColor(c); });
 	connect(this, &color_label::hidden, dialog, &QDialog::done);
 	
 	dialog->show();

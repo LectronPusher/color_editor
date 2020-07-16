@@ -1,5 +1,7 @@
 #pragma once
 
+#include "mask.hpp"
+
 #include <QGraphicsItem>
 #include <QImage>
 #include <QPainter>
@@ -18,16 +20,15 @@ public:
 			   QWidget *widget) override;
 	
 	const QImage image() const;
-	bool has_image();
-	bool is_modified();
+	bool has_image() const;
+	bool is_modified() const;
 	const QImage apply_mask();
-	void set_mask(const QImage &new_mask, const QRegion &region);
+	void set_mask(const mask &new_mask);
 	
 private:
 	QImage stored_image;
-	QImage mask;
-	QRegion mask_region;
-	bool modified = false;
+	mask image_mask;
+	bool mask_applied = false;
 	
 }; // image_base
 

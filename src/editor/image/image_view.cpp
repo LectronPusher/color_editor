@@ -15,11 +15,11 @@ namespace image {
 
 image_view::image_view(QWidget *parent) : QGraphicsView(parent) {
 	setScene(new QGraphicsScene(this));
+	scene()->setBackgroundBrush(Qt::darkGray);
 	_base = new image_base(QImage());
 	scene()->addItem(_base);
 	
 	update_mouse_mode();
-	setBackgroundBrush(Qt::darkGray);
 }
 
 image_base *image_view::base() {
@@ -142,25 +142,22 @@ void image_view::update_mouse_mode() {
 void image_view::mouseMoveEvent(QMouseEvent *event) {
 	if (mouse_mode::mode() == mouse_mode::point) {
 		QPoint point = scene_point(event->pos());
-		if (_base->boundingRect().contains(point))
-			emit point_selected(point);
+		emit point_selected(point);
 	}
 	QGraphicsView::mouseMoveEvent(event);
 }
 
-void image_view::mousePressEvent(QMouseEvent * event) {
+void image_view::mousePressEvent(QMouseEvent *event) {
 	if (event->button() == Qt::LeftButton) {
 		QPoint point = scene_point(event->pos());
-		if (_base->boundingRect().contains(point)) {
-			switch(mouse_mode::mode()) {
-			case mouse_mode::single_point:
+		
+		if (mouse_mode::mode() == mouse_mode::single_point) {
+			if (_base->boundingRect().contains(point)) {
 				mouse_mode::set_global_mode(mouse_mode::none);
-				// fall through
-			case mouse_mode::point:
 				emit point_selected(point);
-			default:
-				break;
 			}
+		} else if (mouse_mode::mode() == mouse_mode::point) {
+			emit point_selected(point);
 		}
 	}
 	QGraphicsView::mousePressEvent(event);
@@ -168,7 +165,8 @@ void image_view::mousePressEvent(QMouseEvent * event) {
 
 QPoint image_view::scene_point(const QPoint &pos) {
 	QPointF pf = mapToScene(pos);
-	return QPoint(pf.x(), pf.y());
+	// QPointF::toPoint() rounds actively, I'd rather always round down
+	return QPoint((int)pf.x(), (int)pf.y());
 }
 
 void image_view::set_image(const QImage &image) {
