@@ -6,7 +6,7 @@ namespace select {
 QImage selector::image = QImage();
 
 selector::selector(QString name_in) : selector_name(name_in) {
-	options = new QGridLayout;
+	options = new QVBoxLayout;
 	setLayout(options);
 }
 

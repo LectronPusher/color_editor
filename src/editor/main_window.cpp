@@ -81,6 +81,7 @@ void main_window::setup_select_panel(QVBoxLayout *panel_layout) {
 	selector_stack = new widget_stack<select::selector>;
 	selector_stack->add(new select::selector_types::select_all);
 	selector_stack->add(new select::selector_types::draw);
+	selector_stack->add(new select::selector_types::color_match);
 	
 	auto clear_b = new QToolButton;
 	clear_b->setText("Clear Selection");
@@ -116,7 +117,8 @@ void main_window::setup_color_panel(QVBoxLayout *panel_layout) {
 				this, &main_window::effect_altered);
 	}
 	connect(store_b, &QToolButton::clicked, view, [=](){
-		view->base()->apply_mask(); 
+		const QImage &image = view->base()->apply_mask();
+		selector_stack->at(0)->update_image(image);
 		selection.clear();
 	});
 	

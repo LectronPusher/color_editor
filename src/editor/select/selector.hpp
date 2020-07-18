@@ -4,7 +4,7 @@
 
 #include <QWidget>
 #include <QImage>
-#include <QGridLayout>
+#include <QVBoxLayout>
 #include <QRegion>
 
 namespace editor {
@@ -25,7 +25,7 @@ signals:
 	void region_selected(selection::select_region region);
 	
 protected:
-	QGridLayout *options;
+	QVBoxLayout *options;
 	static QImage image;
 	
 private:

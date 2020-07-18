@@ -2,6 +2,7 @@
 
 #include "selector.hpp"
 #include "../mouse_mode.hpp"
+#include "../color/color_label.hpp"
 
 #include <QCheckBox>
 #include <QButtonGroup>
@@ -25,6 +26,8 @@ private:
 
 
 class draw : public selector {
+	Q_OBJECT
+	
 public:
 	draw();
 	
@@ -41,6 +44,26 @@ private:
 	QRect create_rect(const QPoint &point);
 	
 }; // draw
+
+
+class color_match : public selector {
+	Q_OBJECT
+	
+public:
+	color_match();
+	
+public slots:
+	virtual void point_selected(const QPoint &point) override;
+	
+private:
+	color::color_label *source_color;
+	mouse_mode *choose_color;
+	QSpinBox *fuzziness;
+	
+	QRegion matching_pixels();
+	bool within_fuzzy(const QColor &color);
+	
+}; // color_match
 
 } // selector_types
 } // select

@@ -4,7 +4,7 @@ namespace editor {
 namespace color {
 
 effect::effect(QString name_in) : effect_name(name_in) {
-	options = new QGridLayout;
+	options = new QVBoxLayout;
 	setLayout(options);
 }
 

@@ -5,7 +5,7 @@
 #include <QWidget>
 #include <QImage>
 #include <QRegion>
-#include <QGridLayout>
+#include <QVBoxLayout>
 
 namespace editor {
 namespace color {
@@ -22,7 +22,7 @@ signals:
 	void altered();
 	
 protected:
-	QGridLayout *options;
+	QVBoxLayout *options;
 	virtual void showEvent(QShowEvent *event) override;
 	
 private:

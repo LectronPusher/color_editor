@@ -6,7 +6,7 @@
 namespace editor {
 namespace color {
 
-color_label::color_label(QWidget *parent, QColor starting_color)
+	color_label::color_label(QColor starting_color, QWidget *parent)
 : QFrame(parent), fill_color(starting_color) {
 	QWidget::resize(25, 25);
 	setFrameStyle(QFrame::Panel | QFrame::Sunken);

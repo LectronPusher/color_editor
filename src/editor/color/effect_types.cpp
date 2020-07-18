@@ -1,6 +1,6 @@
 #include "effect_types.hpp"
 
-#include <QColor>
+#include <QHBoxLayout>
 #include <QLabel>
 #include <QLinearGradient>
 #include <QSlider>
@@ -12,14 +12,16 @@ namespace effect_types {
 
 // solid_color
 solid_color::solid_color() : effect("Solid Color") {
-	changeable_color = new color_label(this, Qt::red);
+	changeable_color = new color_label(Qt::red);
 	
 	connect(changeable_color, &color_label::color_changed,
 			this, &effect::altered);
 	
-	options->addWidget(new QLabel("Color:"), 0, 0);
-	options->addWidget(changeable_color, 0, 1);
-	options->setRowStretch(1, 1);
+	auto hbox = new QHBoxLayout;
+	hbox->addWidget(new QLabel("Color:"));
+	hbox->addWidget(changeable_color);
+	options->addLayout(hbox);
+	options->addStretch(1);
 }
 
 image::mask solid_color::create_mask(const QImage &, const QRegion &region) {
@@ -32,23 +34,27 @@ image::mask solid_color::create_mask(const QImage &, const QRegion &region) {
 
 // gradient
 gradient::gradient() : effect("Gradient") {
-	color_1 = new color_label(this, Qt::cyan);
-	color_2 = new color_label(this, Qt::yellow);
+	color_1 = new color_label(Qt::cyan);
+	color_2 = new color_label(Qt::yellow);
 	orient_box = new QComboBox;
-	orient_box->addItem("Horizontal", QVariant(true));
-	orient_box->addItem("Vertical", QVariant(false));
+	orient_box->addItem("Horizontal", true);
+	orient_box->addItem("Vertical", false);
 	
 	connect(color_1, &color_label::color_changed, this, &effect::altered);
 	connect(color_2, &color_label::color_changed, this, &effect::altered);
 	connect(orient_box, QOverload<int>::of(&QComboBox::currentIndexChanged),
 			this, &effect::altered);
 	
-	options->addWidget(new QLabel("Color 1:"), 0, 0);
-	options->addWidget(color_1, 0, 1);
-	options->addWidget(new QLabel("Color 2:"), 1, 0);
-	options->addWidget(color_2, 1, 1);
-	options->addWidget(orient_box, 2, 0, 1, 2);
-	options->setRowStretch(3, 1);
+	auto hbox = new QHBoxLayout;
+	hbox->addWidget(new QLabel("Color 1:"));
+	hbox->addWidget(color_1);
+	options->addLayout(hbox);
+	hbox = new QHBoxLayout;
+	hbox->addWidget(new QLabel("Color 2:"));
+	hbox->addWidget(color_2);
+	options->addLayout(hbox);
+	options->addWidget(orient_box);
+	options->addStretch(1);
 }
 
 image::mask gradient::create_mask(const QImage &, const QRegion &region) {
@@ -81,7 +87,7 @@ QGradient gradient::create_gradient(const QSize &size) {
 
 // transparent
 transparent::transparent() : effect("Transparent Color") {
-	trans_label = new color_label(this, Qt::magenta);
+	trans_label = new color_label(Qt::magenta);
 	trans_label->enable_transparency();
 	auto slider = new QSlider(Qt::Horizontal);
 	slider->setMinimum(0);
@@ -89,8 +95,8 @@ transparent::transparent() : effect("Transparent Color") {
 	auto spinbox = new QSpinBox;
 	spinbox->setRange(0, 255);
 	override_box = new QComboBox;
-	override_box->addItem("Layer Over", QVariant(false));
-	override_box->addItem("Replace", QVariant(true));
+	override_box->addItem("Layer Over", false);
+	override_box->addItem("Replace", true);
 	
 	connect(trans_label, &color_label::color_changed, this, &effect::altered);
 	connect(slider, &QSlider::valueChanged,
@@ -103,15 +109,18 @@ transparent::transparent() : effect("Transparent Color") {
 	
 	slider->setValue(80);
 	
-	options->addWidget(new QLabel("Color:"), 0, 0);
-	options->addWidget(trans_label, 0, 1);
-	options->setAlignment(trans_label, Qt::AlignRight);
-	options->addWidget(new QLabel("Opacity:"), 1, 0);
-	options->addWidget(spinbox, 1, 1);
+	auto hbox = new QHBoxLayout;
+	hbox->addWidget(new QLabel("Color:"));
+	hbox->addWidget(trans_label);
+	options->addLayout(hbox);
+	hbox = new QHBoxLayout;
+	hbox->addWidget(new QLabel("Opacity:"));
+	hbox->addWidget(spinbox);
 	spinbox->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
-	options->addWidget(slider, 2, 0, 1, 2);
-	options->addWidget(override_box, 3, 0, 1, 2);
-	options->setRowStretch(4, 1);
+	options->addLayout(hbox);
+	options->addWidget(slider);
+	options->addWidget(override_box);
+	options->addStretch(1);
 }
 
 void transparent::set_label_transparency(int value) {

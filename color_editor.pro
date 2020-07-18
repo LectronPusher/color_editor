@@ -30,6 +30,11 @@ HEADERS += src/editor/main_window.hpp \
 		   src/editor/color/effect_types.hpp \
 		   src/editor/color/color_label.hpp
 
+# external
+INCLUDEPATH += external/ColorUtils/
+SOURCES += external/ColorUtils/ColorUtils.cpp
+HEADERS += external/ColorUtils/ColorUtils.hpp
+
 TARGET = color_editor.exe
 DESTDIR = build
 MOC_DIR = build/tmp

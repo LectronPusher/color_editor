@@ -38,6 +38,8 @@ private:
 
 
 class transparent : public effect {
+	Q_OBJECT
+	
 public:
 	transparent();
 	image::mask create_mask(const QImage &image, const QRegion &region) override;

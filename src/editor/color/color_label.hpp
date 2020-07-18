@@ -12,7 +12,7 @@ class color_label : public QFrame {
 	Q_OBJECT
 	
 public:
-	color_label(QWidget *parent, QColor starting_color = Qt::white);
+	color_label(QColor starting_color = Qt::white, QWidget *parent = nullptr);
 	virtual QSize sizeHint() const override;
 	QColor color() const;
 	void disable_interaction();
