@@ -21,9 +21,14 @@ public:
 private slots:
 	void maybe_set(int state);
 	
+protected:
+	virtual void hideEvent(QHideEvent *event) override;
+	virtual void showEvent(QShowEvent *event) override;
+	
 private:
 	const mode_enum local_mode;
 	const int local_index;
+	bool unchecked_by_hiding = false;
 	
 	static mode_enum global_mode;
 	static int index;

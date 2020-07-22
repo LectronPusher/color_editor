@@ -3,13 +3,19 @@
 namespace editor {
 namespace select {
 
-void selection::add(const select_region &region) {
-	switch (region.second) {
+void selection::add(const select_region &region_pair) {
+	QRegion region = region_pair.first;
+	switch (region_pair.second) {
 		case select:
-			selected_region |= region.first;
+			selected_region |= region;
 			break;
 		case exclude:
-			excluded_region |= region.first;
+			excluded_region |= region;
+			break;
+		case remove:
+			excluded_region -= region;
+			selected_region -= region;
+			break;
 	}
 	combined_region = selected_region - excluded_region;
 }

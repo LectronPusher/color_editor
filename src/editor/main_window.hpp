@@ -9,6 +9,7 @@
 #include <QWidget>
 #include <QCloseEvent>
 #include <QVBoxLayout>
+#include <QCheckBox>
 
 namespace editor {
 
@@ -30,6 +31,7 @@ private:
 	image::image_view *view;
 	// stores the selected pixels
 	select::selection selection;
+	QCheckBox *remove_selection;
 	// stores the available selectors and their algorithms
 	widget_stack<select::selector> *selector_stack;
 	// stores the available color effects and their algorithms

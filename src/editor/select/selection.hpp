@@ -8,7 +8,7 @@ namespace select {
 
 class selection {
 public:
-	enum select_type {select, exclude};
+	enum select_type {select, exclude, remove};
 	typedef QPair<QRegion, select_type> select_region;
 	
 	void add(const select_region &region);

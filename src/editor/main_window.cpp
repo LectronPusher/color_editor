@@ -83,6 +83,7 @@ void main_window::setup_select_panel(QVBoxLayout *panel_layout) {
 	selector_stack->add(new select::selector_types::draw);
 	selector_stack->add(new select::selector_types::color_match);
 	
+	remove_selection = new QCheckBox("Remove From Both");
 	auto clear_b = new QToolButton;
 	clear_b->setText("Clear Selection");
 	
@@ -99,6 +100,8 @@ void main_window::setup_select_panel(QVBoxLayout *panel_layout) {
 	connect(clear_b, &QToolButton::clicked, this, &main_window::effect_altered);
 	
 	panel_layout->addWidget(selector_stack);
+	panel_layout->addWidget(remove_selection);
+	panel_layout->setAlignment(remove_selection, Qt::AlignCenter);
 	panel_layout->addWidget(clear_b);
 	panel_layout->setAlignment(clear_b, Qt::AlignCenter);
 }
@@ -128,6 +131,8 @@ void main_window::setup_color_panel(QVBoxLayout *panel_layout) {
 }
 
 void main_window::region_selected(select::selection::select_region region) {
+	if (remove_selection->isChecked())
+		region.second = select::selection::remove;
 	selection.add(region);
 	effect_altered();
 }

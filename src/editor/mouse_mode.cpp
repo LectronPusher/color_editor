@@ -33,6 +33,20 @@ void mouse_mode::set_view(image::image_view *new_view) {
 	view = new_view;
 }
 
+void mouse_mode::hideEvent(QHideEvent *) {
+	if (isChecked()) {
+		unchecked_by_hiding = true;
+		setChecked(false);
+	}
+}
+
+void mouse_mode::showEvent(QShowEvent *) {
+	if (unchecked_by_hiding) {
+		unchecked_by_hiding = false;
+		setChecked(true);
+	}
+}
+
 void mouse_mode::maybe_set(int state) {
 	if (state == Qt::Checked) {
 		if (index != -1 && index != local_index)
