@@ -6,6 +6,7 @@
 #include <QImage>
 #include <QVBoxLayout>
 #include <QRegion>
+#include <QSet>
 
 namespace editor {
 namespace select {
@@ -27,6 +28,7 @@ signals:
 protected:
 	QVBoxLayout *options;
 	static QImage image;
+	static QSet<QRgb> color_table;
 	
 private:
 	const QString selector_name;

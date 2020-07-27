@@ -3,7 +3,7 @@
 A color utilities class that converts RGB to XYZ or CIELAB color spaces and measures the color difference (Delta-E)
 
 ## Important Notes
-* Constructors can take 8-bit RGB format or float format (0.0 to 1.0) as shown in the Instructions section below
+* Constructors can take 8-bit RGB format or double format (0.0 to 1.0) as shown in the Instructions section below
 * **Calculations are quasimetric!**
 * The conversions calibrate the RGB color to 2° with illumination D65
 * Delta-e is calculated using CIE76, which may be validated using [this link](http://colormine.org/delta-e-calculator)
@@ -17,14 +17,14 @@ A color utilities class that converts RGB to XYZ or CIELAB color spaces and meas
 ## Instructions
 ### Constructing Colors
 ```
-ColorUtils::rgbColor c1(static_cast<unsigned int>(255), 255, 255);  // unsigned int constructor
-ColorUtils::rgbColor c2(static_cast<float>(0), 0, 0); // float constructor
+ColorUtils::rgbColor c1(255, 255, 255);  // int constructor
+ColorUtils::rgbColor c2(0, 0, 0); // double constructor
 ```
 ```
-ColorUtils::xyzColor cX1(static_cast<float>(255), 0, 0); // float constructor
+ColorUtils::xyzColor cX1(1.0, 0, 0); // double constructor
 ```
 ```
-ColorUtils::CIELABColorSpace cC1(static_cast<float>(255), 255, 255); // float constructor
+ColorUtils::CIELABColorSpace cC1(255, 255, 255); // double constructor
 ```
 ### RGB to XYZ Converter
 ```
@@ -36,7 +36,7 @@ ColorUtils::CIELABColorSpace cC2 = xyzToCIELAB(xyzColor cX1); // cC2 contains th
 ```
 ### Delta-E Calculator
 ```
-float deltaE = getColorDeltaE(rgbColor c1, rgbColor c2);  // deltaE = 100.0
+double deltaE = getColorDeltaE(rgbColor c1, rgbColor c2);  // deltaE = 100.0
 ```
 
 ## Task List

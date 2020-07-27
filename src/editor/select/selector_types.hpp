@@ -8,6 +8,7 @@
 #include <QButtonGroup>
 #include <QSpinBox>
 #include <QComboBox>
+#include <QBitmap>
 
 namespace editor {
 namespace select {
@@ -16,10 +17,6 @@ namespace selector_types {
 class select_all : public selector {
 public:
 	select_all();
-	
-private:
-	QCheckBox *select_nothing;
-	
 	QRegion select();
 	
 }; // select_all
@@ -61,7 +58,7 @@ private:
 	QSpinBox *fuzziness;
 	
 	QRegion matching_pixels();
-	bool within_fuzzy(const QColor &color);
+	QBitmap matching_bitmap(const QRgb &rgb);
 	
 }; // color_match
 

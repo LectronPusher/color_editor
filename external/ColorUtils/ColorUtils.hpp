@@ -9,96 +9,54 @@
 #ifndef ColorUtils_hpp
 #define ColorUtils_hpp
 
-class ColorUtils
-{
-public:     // General-use structs
-    struct xyzColor
-    {
-        float x, y, z;
-        
-        xyzColor(){}
-        xyzColor(float x, float y, float z)
-        {
-            this->x = x; this->y = y; this->z = z;
-        }
-        xyzColor(const xyzColor& c)
-        {
-            x = c.x; y = c.y; z = c.z;
-        }
-        xyzColor& operator=(const xyzColor& c)
-        {
-            x = c.x; y = c.y; z = c.z;
-            return *this;
-        }
-    };
-    struct CIELABColorSpace
-    {
-        float l, a, b;
-        
-        CIELABColorSpace(){}
-        CIELABColorSpace(float l, float a, float b)
-        {
-            this->l = l; this->a = a; this->b = b;
-        }
-        CIELABColorSpace(const CIELABColorSpace& c)
-        {
-            l = c.l; a = c.a; b = c.b;
-        }
-        CIELABColorSpace& operator=(const CIELABColorSpace& c)
-        {
-            l = c.l; a = c.a; b = c.b;
-            return *this;
-        }
-    };
-    struct rgbColor
-    {
-        unsigned int r, g, b;
-        float rF, gF, bF;
-        
-        rgbColor(){}
-        rgbColor(unsigned int r, unsigned int g, unsigned int b)
-        {
-            this->r = r % 256; this->g = g % 256; this->b = b % 256;
-            initFloats();
-        }
-        rgbColor(float r, float g, float b)
-        {
-            this->rF = r; this->gF = g; this->bF = b;
-            initInts();
-        }
-        rgbColor(const rgbColor& c)
-        {
-            r = c.r; g = c.g; b = c.b;
-            initFloats();
-        }
-//        rgbColor(const Color4F& c)        // Cocos2D-X Color4F constructor
-//        {
-//            Color4B x(c);
-//            r = x.r; g = x.g; b = x.b;
-//        }
-        rgbColor& operator=(const rgbColor& c)
-        {
-            r = c.r; g = c.g; b = c.b;
-            initFloats();
-            return *this;
-        }
-        
-    private:
-        void initFloats()
-        {
-            rF = r / 255.0; gF = g / 255.0; bF = b / 255.0;
-        }
-        void initInts()
-        {
-            r = rF * 255.0; g = gF * 255.0; b = bF * 255.0;
-        }
-    };
-    
-    
-    // Functions
-    static float getColorDeltaE(rgbColor c1, rgbColor c2);
-    static xyzColor rgbToXyz(rgbColor c);
-    static CIELABColorSpace xyzToCIELAB(xyzColor c);
+#include <QRgb>
+
+namespace ColorUtils {
+
+struct CIELABColor {
+	double _l, _a, _b;
+	
+	CIELABColor() {}
+	CIELABColor(double l, double a, double b)
+	: _l(l), _a(a), _b(b) {}
 };
 
-#endif /* ColorUtils_hpp */
+struct xyzColor {
+	double _x, _y, _z;
+	
+	xyzColor() {}
+	xyzColor(double x, double y, double z)
+	: _x(x), _y(y), _z(z) {}
+	
+	CIELABColor toCIELAB();
+};
+
+struct rgbColor {
+	uint16_t _r, _g, _b;
+	double _rF, _gF, _bF;
+	
+	rgbColor() {}
+	rgbColor(int r, int g, int b)
+	: _r(r), _g(g), _b(b) {
+		_rF = _r / 255.0;
+		_gF = _g / 255.0;
+		_bF = _b / 255.0;
+	}
+	rgbColor(double r, double g, double b)
+	: _rF(r), _gF(g), _bF(b) {
+		_r = _rF * 255.0;
+		_g = _gF * 255.0;
+		_b = _bF * 255.0;
+	}
+	rgbColor(QRgb rgb)
+	: rgbColor(qRed(rgb), qGreen(rgb), qBlue(rgb)) {
+	}
+	
+	xyzColor toXyz();
+};
+
+double getColorDeltaE(rgbColor rgb1, rgbColor rgb2);
+
+}; // ColorUtils
+
+#endif // ColorUtils_hpp

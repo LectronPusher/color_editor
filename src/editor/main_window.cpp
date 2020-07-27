@@ -108,8 +108,8 @@ void main_window::setup_select_panel(QVBoxLayout *panel_layout) {
 
 void main_window::setup_color_panel(QVBoxLayout *panel_layout) {
 	effect_stack = new widget_stack<color::effect>;
-	effect_stack->add(new color::effect_types::solid_color);
 	effect_stack->add(new color::effect_types::transparent);
+// 	effect_stack->add(new color::effect_types::solid_color);
 	effect_stack->add(new color::effect_types::gradient);
 	
 	auto store_b = new QToolButton;

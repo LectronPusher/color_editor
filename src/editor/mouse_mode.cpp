@@ -7,7 +7,7 @@ namespace editor {
 mouse_mode::mode_enum mouse_mode::global_mode = mouse_mode::none;
 int mouse_mode::index = -1;
 image::image_view *mouse_mode::view = nullptr;
-QList<mouse_mode *> mouse_mode::all_list = QList<mouse_mode *>();
+QList<mouse_mode *> mouse_mode::all_list;
 
 mouse_mode::mouse_mode(mode_enum new_mode, QString text)
 : QCheckBox(text), local_mode(new_mode), local_index(all_list.size()) {
