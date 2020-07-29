@@ -1,6 +1,6 @@
 #pragma once
 
-#include "selection.hpp"
+#include "../editor_model.hpp"
 
 #include <QWidget>
 #include <QImage>
@@ -17,18 +17,17 @@ class selector : public QWidget {
 public:
 	selector(QString name_in);
 	const QString name() const;
+	static void set_model(editor_model *new_model);
 	
 public slots:
-	void update_image(const QImage &new_image);
 	virtual void point_selected(const QPoint &point);
 	
 signals:
-	void region_selected(selection::select_region region);
+	void region_selected(editor_model::select_region region);
 	
 protected:
 	QVBoxLayout *options;
-	static QImage image;
-	static QSet<QRgb> color_table;
+	static editor_model *model;
 	
 private:
 	const QString selector_name;

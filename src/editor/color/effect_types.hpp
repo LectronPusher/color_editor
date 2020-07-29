@@ -2,8 +2,6 @@
 
 #include "effect.hpp"
 #include "color_label.hpp"
-#include "../image/mask.hpp"
-#include "../image/image_base.hpp"
 
 #include <QComboBox>
 #include <QGradient>
@@ -16,7 +14,8 @@ namespace effect_types {
 class solid_color : public effect {
 public:
 	solid_color();
-	image::mask create_mask(const QImage &image, const QRegion &region) override;
+	virtual editor_model::mask_pair create_mask(const QImage &image,
+												const QRect &rect) override;
 	
 private:
 	color_label *changeable_color;
@@ -29,7 +28,8 @@ class gradient : public effect {
 	
 public:
 	gradient();
-	image::mask create_mask(const QImage &image, const QRegion &region) override;
+	virtual editor_model::mask_pair create_mask(const QImage &image,
+												const QRect &rect) override;
 	
 private slots:
 	void swap_colors();
@@ -49,7 +49,8 @@ class transparent : public effect {
 	
 public:
 	transparent();
-	image::mask create_mask(const QImage &image, const QRegion &region) override;
+	virtual editor_model::mask_pair create_mask(const QImage &image,
+												const QRect &rect) override;
 	
 private slots:
 	void set_label_transparency(int value);
@@ -64,7 +65,8 @@ private:
 class pixellate : public effect {
 public:
 	pixellate();
-	image::mask create_mask(const QImage &image, const QRegion &region) override;
+	virtual editor_model::mask_pair create_mask(const QImage &image,
+												const QRect &rect) override;
 	
 private:
 	QSpinBox *pixel_size;

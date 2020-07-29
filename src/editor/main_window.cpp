@@ -14,6 +14,9 @@ namespace editor {
 main_window::main_window(QWidget *parent) : QWidget(parent) {
 	setWindowTitle("color editor");
 	
+	model = new editor_model;
+	select::selector::set_model(model);
+	
 	auto hline = new QLabel;
 	hline->setFrameStyle(QFrame::HLine);
 	hline->setFixedHeight(5);
@@ -41,7 +44,7 @@ main_window::main_window(QWidget *parent) : QWidget(parent) {
 }
 
 void main_window::setup_image_panel(QVBoxLayout *panel_layout) {
-	view = new image::image_view;
+	view = new image::image_view(model);
 	mouse_mode::set_view(view);
 	
 	auto open_b = new QToolButton;
@@ -57,7 +60,7 @@ void main_window::setup_image_panel(QVBoxLayout *panel_layout) {
 	
 	connect(open_b, &QToolButton::clicked, view, [=](){
 		view->open_image();
-		selection.clear();
+		model->clear_regions();
 	});
 	connect(save_as_b, &QToolButton::clicked, view, &image::image_view::save_as);
 	connect(zoom_in_b, &QToolButton::clicked, view, &image::image_view::zoom_in);
@@ -87,8 +90,6 @@ void main_window::setup_select_panel(QVBoxLayout *panel_layout) {
 	auto clear_b = new QToolButton;
 	clear_b->setText("Clear Selection");
 	
-	connect(view, &image::image_view::base_image_changed,
-			selector_stack->at(0), &select::selector::update_image);
 	for (int i = 0; i < selector_stack->count(); ++i) {
 		select::selector *sel = selector_stack->at(i);
 		connect(sel, &select::selector::region_selected,
@@ -96,7 +97,10 @@ void main_window::setup_select_panel(QVBoxLayout *panel_layout) {
 		connect(view, &image::image_view::point_selected,
 				sel, &select::selector::point_selected);
 	}
-	connect(clear_b, &QToolButton::clicked, this, [=](){ selection.clear(); });
+	connect(clear_b, &QToolButton::clicked, this, [=](){
+		model->clear_regions();
+		view->updateScene({model->image_rect()});
+	});
 	connect(clear_b, &QToolButton::clicked, this, &main_window::effect_altered);
 	
 	panel_layout->addWidget(selector_stack);
@@ -111,6 +115,7 @@ void main_window::setup_color_panel(QVBoxLayout *panel_layout) {
 	effect_stack->add(new color::effect_types::transparent);
 // 	effect_stack->add(new color::effect_types::solid_color);
 	effect_stack->add(new color::effect_types::gradient);
+	effect_stack->add(new color::effect_types::pixellate);
 	
 	auto store_b = new QToolButton;
 	store_b->setText("Save Effect to Image");
@@ -119,29 +124,26 @@ void main_window::setup_color_panel(QVBoxLayout *panel_layout) {
 		connect(effect_stack->at(i), &color::effect::altered,
 				this, &main_window::effect_altered);
 	}
-	connect(store_b, &QToolButton::clicked, view, [=](){
-		const QImage &image = view->base()->apply_mask();
-		selector_stack->at(0)->update_image(image);
-		selection.clear();
-	});
+	connect(store_b, &QToolButton::clicked, view, [=](){ model->apply_mask(); });
 	
 	panel_layout->addWidget(effect_stack);
 	panel_layout->addWidget(store_b);
 	panel_layout->setAlignment(store_b, Qt::AlignCenter);
 }
 
-void main_window::region_selected(select::selection::select_region region) {
+void main_window::region_selected(editor_model::select_region region) {
 	if (remove_selection->isChecked())
-		region.second = select::selection::remove;
-	selection.add(region);
+		region.second = editor_model::remove;
+	model->add_region(region);
 	effect_altered();
 }
 
 void main_window::effect_altered() {
-	const QImage &image = view->base()->image();
-	const QRegion &region = selection.selected();
-	image::mask mask = effect_stack->active()->create_mask(image, region);
-	view->base()->set_mask(mask);
+	const QImage &image = model->image();
+	const QRect &rect = model->image_rect();
+	auto mask = effect_stack->active()->create_mask(image, rect);
+	model->set_mask(mask);
+	view->updateScene({model->region_rect()});
 }
 
 void main_window::closeEvent(QCloseEvent *event) {

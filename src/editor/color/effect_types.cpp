@@ -26,10 +26,10 @@ solid_color::solid_color() : effect("Solid Color") {
 	options->addStretch(1);
 }
 
-image::mask solid_color::create_mask(const QImage &, const QRegion &region) {
-	QImage img(region.boundingRect().size(), QImage::Format_ARGB32);
+editor_model::mask_pair solid_color::create_mask(const QImage &, const QRect &rect) {
+	QImage img(rect.size(), QImage::Format_ARGB32);
 	img.fill(changeable_color->color());
-	return {img, region};
+	return img;
 }
 // end solid_color
 
@@ -64,15 +64,15 @@ gradient::gradient() : effect("Gradient") {
 	options->addStretch(1);
 }
 
-image::mask gradient::create_mask(const QImage &, const QRegion &region) {
-	QSize size = region.boundingRect().size();
+editor_model::mask_pair gradient::create_mask(const QImage &, const QRect &rect) {
+	QSize size = rect.size();
 	QImage img(size, QImage::Format_ARGB32);
 	QGradient gradient = create_gradient(size);
 	
 	QPainter painter(&img);
 	painter.fillRect(QRect(QPoint(0, 0), size), gradient);
 	
-	return {img, region};
+	return img;
 }
 
 void gradient::swap_colors() {
@@ -108,8 +108,8 @@ transparent::transparent() : effect("Transparent Color") {
 	auto spinbox = new QSpinBox;
 	spinbox->setRange(0, 255);
 	override_box = new QComboBox;
-	override_box->addItem("Layer Over", false);
-	override_box->addItem("Replace", true);
+	override_box->addItem("Layer Over", editor_model::over);
+	override_box->addItem("Replace", editor_model::replace);
 	
 	connect(trans_label, &color_label::color_changed, this, &effect::altered);
 	connect(slider, &QSlider::valueChanged,
@@ -142,11 +142,11 @@ void transparent::set_label_transparency(int value) {
 	trans_label->set_color(color);
 }
 
-image::mask transparent::create_mask(const QImage &, const QRegion &region) {
-	QImage img(region.boundingRect().size(), QImage::Format_ARGB32);
+editor_model::mask_pair transparent::create_mask(const QImage &, const QRect &rect) {
+	QImage img(rect.size(), QImage::Format_ARGB32);
 	img.fill(trans_label->color());
-	bool paint_over = override_box->currentData().value<bool>();
-	return {img, region, paint_over};
+	auto paint_over = override_box->currentData().value<editor_model::painting_mode>();
+	return {img, paint_over};
 }
 // end transparent
 
@@ -168,12 +168,11 @@ pixellate::pixellate() : effect("Pixellate") {
 	options->addStretch(1);
 }
 
-image::mask pixellate::create_mask(const QImage &image, const QRegion &region) {
+editor_model::mask_pair pixellate::create_mask(const QImage &image, const QRect &rect) {
 	const int size = pixel_size->value();
 	if (size == 1)
-		return {image, region};
+		return {image};
 	
-	QRect rect = region.boundingRect();
 	QImage pixellated = image.copy(rect);
 	QPainter painter(&pixellated);
 	int start = (size % 2 == 0) ? (size - 1) /2 : size / 2;
@@ -187,7 +186,7 @@ image::mask pixellate::create_mask(const QImage &image, const QRegion &region) {
 // 		painter.fillRect(QRect(QPoint(), QSize()), image.pixelColor(point));
 // 	}
 	
-	return {pixellated, region};
+	return pixellated;
 }
 
 QRect pixellate::create_rect(const QPoint &point) {

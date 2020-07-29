@@ -1,10 +1,8 @@
 #pragma once
 
-#include "../image/mask.hpp"
+#include "../editor_model.hpp"
 
 #include <QWidget>
-#include <QImage>
-#include <QRegion>
 #include <QVBoxLayout>
 
 namespace editor {
@@ -16,7 +14,8 @@ class effect : public QWidget {
 public:
 	effect(QString name_in);
 	const QString name() const;
-	virtual image::mask create_mask(const QImage &image, const QRegion &region) = 0;
+	virtual editor_model::mask_pair create_mask(const QImage &image,
+												const QRect &rect) = 0;
 	
 signals:
 	void altered();

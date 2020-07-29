@@ -1,7 +1,6 @@
 #include "image_view.hpp"
 #include "../mouse_mode.hpp"
 
-#include <QToolButton>
 #include <QFileDialog>
 #include <QMessageBox>
 #include <QTextStream>
@@ -13,21 +12,17 @@
 namespace editor{
 namespace image {
 
-image_view::image_view(QWidget *parent) : QGraphicsView(parent) {
+image_view::image_view(editor_model *model, QWidget *parent)
+: QGraphicsView(parent), model(model) {
 	setScene(new QGraphicsScene(this));
 	scene()->setBackgroundBrush(Qt::darkGray);
-	_base = new image_base(QImage());
-	scene()->addItem(_base);
+	scene()->addItem(new image_base(model));
 	
 	update_mouse_mode();
 }
 
-image_base *image_view::base() {
-	return _base;
-}
-
 bool image_view::modifications_resolved() {
-	if (_base->has_image() && _base->is_modified()) {
+	if (model->is_altered()) {
 		auto dialog_ans = QMessageBox::warning(
 			this,
 			"Unsaved Changes",
@@ -64,7 +59,7 @@ void image_view::open_image(QString filepath) {
 }
 
 void image_view::save_as() {
-	if (_base->has_image()) {
+	if (!model->image().isNull()) {
 		QString filepath = QFileDialog::getSaveFileName(
 			this,
 			"Save As",
@@ -72,7 +67,7 @@ void image_view::save_as() {
 			"Image Files (*.png *.jpg *.bmp);;All Files (*)"
 		);
 		if (!filepath.isEmpty()) {
-			QImage image = _base->apply_mask();
+			QImage image = model->apply_mask();
 			image.save(filepath);
 			set_image(image);
 			old_file = QFileInfo(filepath);
@@ -152,7 +147,7 @@ void image_view::mousePressEvent(QMouseEvent *event) {
 		QPoint point = scene_point(event->pos());
 		
 		if (mouse_mode::mode() == mouse_mode::single_point) {
-			if (_base->boundingRect().contains(point)) {
+			if (model->image_rect().contains(point)) {
 				mouse_mode::set_global_mode(mouse_mode::none);
 				emit point_selected(point);
 			}
@@ -165,20 +160,14 @@ void image_view::mousePressEvent(QMouseEvent *event) {
 
 QPoint image_view::scene_point(const QPoint &pos) {
 	QPointF pf = mapToScene(pos);
-	// QPointF::toPoint() rounds actively, I'd rather always round down
+	// QPointF::toPoint() rounds to the nearest value, I'd rather always round down
 	return QPoint((int)pf.x(), (int)pf.y());
 }
 
 void image_view::set_image(const QImage &image) {
-	// destroy old, create new
-	scene()->removeItem(_base);
-	delete _base;
-	_base = new image_base(image);
-	scene()->addItem(_base);
-	
-	// update visuals
+	model->set_image(image);
 	reset_zoom();
-	scene()->setSceneRect(_base->boundingRect());
+	scene()->setSceneRect(model->image_rect());
 	
 	// scale down the image if larger than the viewport, handle scrollbar bug
 	QSize i_size = image.size();
@@ -192,8 +181,6 @@ void image_view::set_image(const QImage &image) {
 		setHorizontalScrollBarPolicy(Qt::ScrollBarAsNeeded);
 		setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
 	}
-	
-	emit base_image_changed(image);
 }
 
 } // image

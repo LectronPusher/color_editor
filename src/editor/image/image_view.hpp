@@ -1,5 +1,6 @@
 #pragma once
 
+#include "../editor_model.hpp"
 #include "image_base.hpp"
 
 #include <QGraphicsView>
@@ -14,8 +15,7 @@ class image_view : public QGraphicsView {
 	Q_OBJECT
 	
 public:
-	image_view(QWidget *parent = nullptr);
-	image_base *base();
+	image_view(editor_model *model_in, QWidget *parent = nullptr);
 	bool modifications_resolved();
 	
 public slots:
@@ -29,7 +29,6 @@ public slots:
 	void update_mouse_mode();
 	
 signals:
-	void base_image_changed(QImage new_image);
 	void point_selected(QPoint point);
 	
 protected:
@@ -37,7 +36,7 @@ protected:
 	void mousePressEvent(QMouseEvent *event);
 	
 private:
-	image_base *_base;
+	editor_model *model;
 	const qreal scale_factor = 1.2;
 	
 	QFileInfo old_file = QFileInfo("/home/ian/all/coding/c++/color_editor/data/");

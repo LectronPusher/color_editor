@@ -21,10 +21,10 @@ select_all::select_all() : selector("Select All") {
 	select_b->setText("Select");
 	
 	connect(exclude_b, &QToolButton::clicked, this, [=](){
-		emit selector::region_selected({ image.rect(), selection::exclude });
+		emit selector::region_selected({ model->image_rect(), editor_model::exclude });
 	});
 	connect(select_b, &QToolButton::clicked, this, [=](){
-		emit selector::region_selected({ image.rect(), selection::select });
+		emit selector::region_selected({ model->image_rect(), editor_model::select });
 	});
 	
 	auto hbox = new QHBoxLayout;
@@ -68,9 +68,9 @@ void draw::point_selected(const QPoint &point) {
 	QRect rect = create_rect(point);
 	auto r_type = region_type->currentData().value<QRegion::RegionType>();
 	QRegion new_region(rect, r_type);
-	new_region = new_region.intersected(image.rect());
+	new_region = new_region.intersected(model->image_rect());
 	
-	auto s_type = (exclude_mm->isChecked()) ? selection::exclude : selection::select;
+	auto s_type = (exclude_mm->isChecked()) ? editor_model::exclude : editor_model::select;
 	emit selector::region_selected({ new_region, s_type});
 }
 
@@ -96,10 +96,10 @@ color_match::color_match() : selector("Match Colors") {
 	fuzziness->setSuffix("%");
 	
 	connect(exclude_b, &QToolButton::clicked, this, [=](){
-		emit selector::region_selected({ matching_pixels(), selection::exclude });
+		emit selector::region_selected({ matching_pixels(), editor_model::exclude });
 	});
 	connect(select_b, &QToolButton::clicked, this, [=](){
-		emit selector::region_selected({ matching_pixels(), selection::select });
+		emit selector::region_selected({ matching_pixels(), editor_model::select });
 	});
 	
 	auto hbox = new QHBoxLayout;
@@ -118,8 +118,8 @@ color_match::color_match() : selector("Match Colors") {
 }
 
 void color_match::point_selected(const QPoint &point) {
-	if (image.rect().contains(point))
-		source_color->set_color(image.pixelColor(point));
+	if (model->image_rect().contains(point))
+		source_color->set_color(model->image().pixelColor(point));
 }
 
 QRegion color_match::matching_pixels() {
@@ -128,11 +128,11 @@ QRegion color_match::matching_pixels() {
 	
 	QRegion region;
 	if (fuzzy == 100) {
-		region |= image.rect();
+		region = model->image_rect();
 	} else if (fuzzy == 0) {
-		region |= matching_bitmap(source);
+		region = matching_bitmap(source);
 	} else {
-		foreach (QRgb rgb, color_table) {
+		foreach (QRgb rgb, model->color_table()) {
 			if (ColorUtils::getColorDeltaE(rgb, source) <= fuzzy)
 				region |= matching_bitmap(rgb);
 		}
@@ -142,7 +142,7 @@ QRegion color_match::matching_pixels() {
 }
 
 QBitmap color_match::matching_bitmap(const QRgb &rgb) {
-	QImage mask = image.createMaskFromColor(rgb, Qt::MaskOutColor);
+	QImage mask = model->image().createMaskFromColor(rgb, Qt::MaskOutColor);
 	return QBitmap::fromImage(mask);
 	
 }
