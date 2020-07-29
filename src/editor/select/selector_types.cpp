@@ -77,7 +77,7 @@ void draw::point_selected(const QPoint &point) {
 QRect draw::create_rect(const QPoint &point) {
 	int s = side_length->value();
 	int b = (s % 2 == 0) ? (s - 1) /2 : s / 2;
-	return QRect(point - QPoint(b, b), QSize(s, s));
+	return {point - QPoint(b, b), QSize(s, s)};
 }
 // end draw
 
@@ -146,7 +146,6 @@ QBitmap color_match::matching_bitmap(const QRgb &rgb) {
 	return QBitmap::fromImage(mask);
 	
 }
-
 // end color_match
 
 } // selector_types

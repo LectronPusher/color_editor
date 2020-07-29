@@ -17,7 +17,6 @@ namespace selector_types {
 class select_all : public selector {
 public:
 	select_all();
-	QRegion select();
 	
 }; // select_all
 

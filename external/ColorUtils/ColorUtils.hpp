@@ -9,54 +9,57 @@
 #ifndef ColorUtils_hpp
 #define ColorUtils_hpp
 
+#include <cstdint>
 #include <QRgb>
 
 namespace ColorUtils {
 
-struct CIELABColor {
-	double _l, _a, _b;
-	
-	CIELABColor() {}
-	CIELABColor(double l, double a, double b)
-	: _l(l), _a(a), _b(b) {}
+struct CIELABColorSpace {
+	double l, a, b;
+
+	CIELABColorSpace() {}
+	CIELABColorSpace(double l, double a, double b)
+		: l(l), a(a), b(b) {}
 };
 
 struct xyzColor {
-	double _x, _y, _z;
-	
+	double x, y, z;
+
 	xyzColor() {}
 	xyzColor(double x, double y, double z)
-	: _x(x), _y(y), _z(z) {}
-	
-	CIELABColor toCIELAB();
+		: x(x), y(y), z(z) {}
 };
 
 struct rgbColor {
-	uint16_t _r, _g, _b;
-	double _rF, _gF, _bF;
-	
+	uint16_t r, g, b;
+	double rF, gF, bF;
+
 	rgbColor() {}
 	rgbColor(int r, int g, int b)
-	: _r(r), _g(g), _b(b) {
-		_rF = _r / 255.0;
-		_gF = _g / 255.0;
-		_bF = _b / 255.0;
+		: r(r), g(g), b(b) {
+		rF = r / 255.0;
+		gF = g / 255.0;
+		bF = b / 255.0;
 	}
-	rgbColor(double r, double g, double b)
-	: _rF(r), _gF(g), _bF(b) {
-		_r = _rF * 255.0;
-		_g = _gF * 255.0;
-		_b = _bF * 255.0;
+	rgbColor(double rF, double gF, double bF)
+		: rF(rF), gF(gF), bF(bF) {
+		r = rF * 255.0;
+		g = gF * 255.0;
+		b = bF * 255.0;
 	}
-	rgbColor(QRgb rgb)
-	: rgbColor(qRed(rgb), qGreen(rgb), qBlue(rgb)) {
-	}
+	rgbColor(unsigned int r, unsigned int g, unsigned int b)
+		: rgbColor((int)r, (int)g, (int)b) {}
+	rgbColor(float r, float g, float b)
+	: rgbColor((double)r, (double)g, (double)b) {}
 	
-	xyzColor toXyz();
+	rgbColor(const QRgb &rgb)
+	: rgbColor(qRed(rgb), qGreen(rgb), qBlue(rgb)) {}
 };
 
 double getColorDeltaE(rgbColor rgb1, rgbColor rgb2);
+xyzColor rgbToXyz(rgbColor rgb);
+CIELABColorSpace xyzToCIELAB(xyzColor xyz);
 
-}; // ColorUtils
+} // ColorUtils
 
 #endif // ColorUtils_hpp

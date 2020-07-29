@@ -1,10 +1,12 @@
 #include "effect_types.hpp"
 
 #include <QHBoxLayout>
+#include <QToolButton>
 #include <QLabel>
 #include <QLinearGradient>
 #include <QSlider>
 #include <QSpinBox>
+#include <QPainter>
 
 namespace editor {
 namespace color {
@@ -39,11 +41,14 @@ gradient::gradient() : effect("Gradient") {
 	orient_box = new QComboBox;
 	orient_box->addItem("Horizontal", true);
 	orient_box->addItem("Vertical", false);
+	auto swap_b = new QToolButton;
+	swap_b->setText("Swap colors");
 	
 	connect(color_1, &color_label::color_changed, this, &effect::altered);
 	connect(color_2, &color_label::color_changed, this, &effect::altered);
 	connect(orient_box, QOverload<int>::of(&QComboBox::currentIndexChanged),
 			this, &effect::altered);
+	connect(swap_b, &QToolButton::clicked, this, &gradient::swap_colors);
 	
 	auto hbox = new QHBoxLayout;
 	hbox->addWidget(new QLabel("Color 1:"));
@@ -54,6 +59,8 @@ gradient::gradient() : effect("Gradient") {
 	hbox->addWidget(color_2);
 	options->addLayout(hbox);
 	options->addWidget(orient_box);
+	options->addWidget(swap_b);
+	options->setAlignment(swap_b, Qt::AlignCenter);
 	options->addStretch(1);
 }
 
@@ -66,6 +73,12 @@ image::mask gradient::create_mask(const QImage &, const QRegion &region) {
 	painter.fillRect(QRect(QPoint(0, 0), size), gradient);
 	
 	return {img, region};
+}
+
+void gradient::swap_colors() {
+	QColor temp = color_1->color();
+	color_1->set_color(color_2->color());
+	color_2->set_color(temp);
 }
 
 QGradient gradient::create_gradient(const QSize &size) {
@@ -87,7 +100,7 @@ QGradient gradient::create_gradient(const QSize &size) {
 
 // transparent
 transparent::transparent() : effect("Transparent Color") {
-	trans_label = new color_label(Qt::magenta);
+	trans_label = new color_label(Qt::red);
 	trans_label->enable_transparency();
 	auto slider = new QSlider(Qt::Horizontal);
 	slider->setMinimum(0);
@@ -136,6 +149,53 @@ image::mask transparent::create_mask(const QImage &, const QRegion &region) {
 	return {img, region, paint_over};
 }
 // end transparent
+
+
+// pixellate
+pixellate::pixellate() : effect("Pixellate") {
+	pixel_size = new QSpinBox;
+	pixel_size->setRange(1, 5000);
+	pixel_size->setValue(5);
+	
+	connect(pixel_size, QOverload<int>::of(&QSpinBox::valueChanged),
+			this, &effect::altered);
+	
+	auto hbox = new QHBoxLayout;
+	hbox->addWidget(new QLabel("Pixel Size:"));
+	hbox->addWidget(pixel_size);
+	pixel_size->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
+	options->addLayout(hbox);
+	options->addStretch(1);
+}
+
+image::mask pixellate::create_mask(const QImage &image, const QRegion &region) {
+	const int size = pixel_size->value();
+	if (size == 1)
+		return {image, region};
+	
+	QRect rect = region.boundingRect();
+	QImage pixellated = image.copy(rect);
+	QPainter painter(&pixellated);
+	int start = (size % 2 == 0) ? (size - 1) /2 : size / 2;
+	for (int row = rect.top(); row < image.width(); row += size) {
+		for (int col = rect.left(); col < image.height(); col += size) {
+			QPoint point(row, col);
+			painter.fillRect(create_rect(point), pixellated.pixelColor(point));
+		}
+	}
+// 	if (image.width() % size != 0) {
+// 		painter.fillRect(QRect(QPoint(), QSize()), image.pixelColor(point));
+// 	}
+	
+	return {pixellated, region};
+}
+
+QRect pixellate::create_rect(const QPoint &point) {
+	int s = pixel_size->value();
+	int b = (s % 2 == 0) ? (s - 1) /2 : s / 2;
+	return QRect(point - QPoint(b, b), QSize(s, s));
+}
+// end pixellate
 
 } // effect_types
 } // color
