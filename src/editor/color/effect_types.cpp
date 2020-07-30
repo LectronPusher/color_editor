@@ -175,7 +175,7 @@ editor_model::mask_pair pixellate::create_mask(const QImage &image, const QRect 
 	
 	QImage pixellated = image.copy(rect);
 	QPainter painter(&pixellated);
-	int start = (size % 2 == 0) ? (size - 1) /2 : size / 2;
+// 	int start = (size % 2 == 0) ? (size - 1) /2 : size / 2;
 	for (int row = rect.top(); row < image.width(); row += size) {
 		for (int col = rect.left(); col < image.height(); col += size) {
 			QPoint point(row, col);

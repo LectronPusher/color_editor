@@ -58,10 +58,7 @@ void main_window::setup_image_panel(QVBoxLayout *panel_layout) {
 	auto reset_zoom_b = new QToolButton;
 	reset_zoom_b->setText("100%");
 	
-	connect(open_b, &QToolButton::clicked, view, [=](){
-		view->open_image();
-		model->clear_regions();
-	});
+	connect(open_b, &QToolButton::clicked, view, [=](){ view->open_image(); });
 	connect(save_as_b, &QToolButton::clicked, view, &image::image_view::save_as);
 	connect(zoom_in_b, &QToolButton::clicked, view, &image::image_view::zoom_in);
 	connect(zoom_out_b, &QToolButton::clicked, view, &image::image_view::zoom_out);
@@ -97,11 +94,7 @@ void main_window::setup_select_panel(QVBoxLayout *panel_layout) {
 		connect(view, &image::image_view::point_selected,
 				sel, &select::selector::point_selected);
 	}
-	connect(clear_b, &QToolButton::clicked, this, [=](){
-		model->clear_regions();
-		view->update_rect(model->image_rect());
-	});
-	connect(clear_b, &QToolButton::clicked, this, &main_window::effect_altered);
+	connect(clear_b, &QToolButton::clicked, this, [=](){ model->clear_regions(); });
 	
 	panel_layout->addWidget(selector_stack);
 	panel_layout->addWidget(remove_selection);
@@ -136,18 +129,15 @@ void main_window::region_selected(editor_model::select_region region) {
 		region.second = editor_model::remove;
 	QRect old_rect = model->region_rect();
 	model->add_region(region);
-	if (old_rect == model->region_rect())
-		view->update_rect(region.first.boundingRect());
-	else
+	if (old_rect != model->region_rect())
 		effect_altered();
 }
 
 void main_window::effect_altered() {
 	const QImage &image = model->image();
-	const QRect &rect = model->image_rect();
+	const QRect &rect = model->region_rect();
 	auto mask = effect_stack->active()->create_mask(image, rect);
 	model->set_mask(mask);
-	view->update_rect(model->region_rect());
 }
 
 void main_window::closeEvent(QCloseEvent *event) {
@@ -164,23 +154,16 @@ void main_window::keyPressEvent(QKeyEvent *event) {
 				model->undo();
 			else if (event->modifiers() == (Qt::ControlModifier | Qt::ShiftModifier))
 				model->redo();
-			else
-				break;
-			view->update();
 			break;
 		case Qt::Key_Y:
-			if (event->modifiers() == Qt::ControlModifier) {
+			if (event->modifiers() == Qt::ControlModifier)
 				model->redo();
-				view->update();
-			}
 			break;
 		case Qt::Key_Undo:
 			model->undo();
-			view->update();
 			break;
 		case Qt::Key_Redo:
 			model->redo();
-			view->update();
 			break;
 		default:
 			event->ignore();

@@ -18,6 +18,8 @@ image_view::image_view(editor_model *model, QWidget *parent)
 	scene()->setBackgroundBrush(Qt::darkGray);
 	scene()->addItem(new image_base(model));
 	
+	connect(model, &editor_model::contents_updated, this, &image_view::update_rect);
+	
 	update_mouse_mode();
 }
 
@@ -50,9 +52,9 @@ void image_view::open_image(QString filepath) {
 		if (!filepath.isEmpty()) {
 			old_file = QFileInfo(filepath);
 			QImage image = QImage(filepath);
-			if (!image.isNull())
+			if (!image.isNull()) {
 				set_image(image);
-			else
+			} else
 				QTextStream(stdout) << "loading failed:" << filepath << Qt::endl;
 		}
 	}

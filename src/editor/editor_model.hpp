@@ -7,11 +7,14 @@
 #include <QPainter>
 #include <QSet>
 
+#include <QStack>
 #include <list>
 
 namespace editor {
 
-class editor_model {
+class editor_model : public QObject {
+	Q_OBJECT
+	
 public:
 	enum painting_mode {over, replace};
 	struct mask_pair : public QPair<QImage, painting_mode> {
@@ -48,6 +51,8 @@ public:
 	
 	void set_image(const QImage &new_image);
 	void set_mask(const mask_pair& pair);
+	const QImage apply_mask();
+	void paint_on(QPainter *painter, const QBrush &background = Qt::NoBrush);
 	
 	void add_region(const select_region &region_pair);
 	void clear_regions();
@@ -55,13 +60,14 @@ public:
 	void redo();
 	void combine_recent_undos(int n);
 	
-	const QImage apply_mask();
-	void paint_on(QPainter *painter, const QBrush &background = Qt::NoBrush);
+signals:
+	void image_changed(QImage image);
+	void contents_updated(QRect rect);
+	void boundary_rect_updated(QRect rect);
 	
 private:
 	QImage _image;
 	QSet<QRgb> _color_table;
-	bool image_altered = false;
 	
 	QImage mask;
 	painting_mode mode;
@@ -70,10 +76,11 @@ private:
 	QRegion excluded;
 	QRegion combined;
 	
-	std::list<undo_data> applied_changes;
-	std::list<undo_data> undone_changes;
+	QStack<undo_data> applied_changes;
+	QStack<undo_data> undone_changes;
 	
 	void apply_change(const undo_data &data);
+	void update_combined();
 	void update_color_table();
 	
 }; // editor_model
