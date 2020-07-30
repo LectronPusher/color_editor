@@ -99,7 +99,7 @@ void main_window::setup_select_panel(QVBoxLayout *panel_layout) {
 	}
 	connect(clear_b, &QToolButton::clicked, this, [=](){
 		model->clear_regions();
-		view->updateScene({model->image_rect()});
+		view->update_rect(model->image_rect());
 	});
 	connect(clear_b, &QToolButton::clicked, this, &main_window::effect_altered);
 	
@@ -134,8 +134,12 @@ void main_window::setup_color_panel(QVBoxLayout *panel_layout) {
 void main_window::region_selected(editor_model::select_region region) {
 	if (remove_selection->isChecked())
 		region.second = editor_model::remove;
+	QRect old_rect = model->region_rect();
 	model->add_region(region);
-	effect_altered();
+	if (old_rect == model->region_rect())
+		view->update_rect(region.first.boundingRect());
+	else
+		effect_altered();
 }
 
 void main_window::effect_altered() {
@@ -143,7 +147,7 @@ void main_window::effect_altered() {
 	const QRect &rect = model->image_rect();
 	auto mask = effect_stack->active()->create_mask(image, rect);
 	model->set_mask(mask);
-	view->updateScene({model->region_rect()});
+	view->update_rect(model->region_rect());
 }
 
 void main_window::closeEvent(QCloseEvent *event) {
@@ -151,6 +155,37 @@ void main_window::closeEvent(QCloseEvent *event) {
 		event->accept();
 	else
 		event->ignore();
+}
+
+void main_window::keyPressEvent(QKeyEvent *event) {
+	switch (event->key()) {
+		case Qt::Key_Z:
+			if (event->modifiers() == Qt::ControlModifier)
+				model->undo();
+			else if (event->modifiers() == (Qt::ControlModifier | Qt::ShiftModifier))
+				model->redo();
+			else
+				break;
+			view->update();
+			break;
+		case Qt::Key_Y:
+			if (event->modifiers() == Qt::ControlModifier) {
+				model->redo();
+				view->update();
+			}
+			break;
+		case Qt::Key_Undo:
+			model->undo();
+			view->update();
+			break;
+		case Qt::Key_Redo:
+			model->redo();
+			view->update();
+			break;
+		default:
+			event->ignore();
+			break;
+	}
 }
 
 } // editor

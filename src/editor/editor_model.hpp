@@ -6,7 +6,8 @@
 #include <QRegion>
 #include <QPainter>
 #include <QSet>
-#include <QList>
+
+#include <list>
 
 namespace editor {
 
@@ -18,9 +19,26 @@ public:
 		: QPair<QImage, painting_mode>(image, mode) {};
 	};
 	
-	enum select_type {select, exclude, remove};
+	enum select_type {select, exclude, remove, clear};
 	typedef QPair<QRegion, select_type> select_region;
+	typedef QPair<QRegion, QRegion> region_pair; // selected first, excluded second
 	
+private:
+	struct undo_data {
+		undo_data(select_type type, QRegion region);
+		undo_data(select_type type, region_pair regions);
+		undo_data(const undo_data &other);
+		undo_data operator=(const undo_data &other);
+		~undo_data();
+		
+		select_type s_type;
+		union {
+			QRegion added_region;
+			region_pair removed_regions;
+		};
+	}; // undo_data
+	
+public:
 	const QImage image();
 	const QRect image_rect();
 	const QRegion selected_region();
@@ -30,8 +48,12 @@ public:
 	
 	void set_image(const QImage &new_image);
 	void set_mask(const mask_pair& pair);
+	
 	void add_region(const select_region &region_pair);
 	void clear_regions();
+	void undo();
+	void redo();
+	void combine_recent_undos(int n);
 	
 	const QImage apply_mask();
 	void paint_on(QPainter *painter, const QBrush &background = Qt::NoBrush);
@@ -47,8 +69,11 @@ private:
 	QRegion selected;
 	QRegion excluded;
 	QRegion combined;
-	QList<select_region> region_changes;
 	
+	std::list<undo_data> applied_changes;
+	std::list<undo_data> undone_changes;
+	
+	void apply_change(const undo_data &data);
 	void update_color_table();
 	
 }; // editor_model

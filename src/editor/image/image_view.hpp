@@ -22,6 +22,8 @@ public slots:
 	void open_image(QString filepath = QString());
 	void save_as();
 	
+	void update_rect(const QRect &scene_rect);
+	
 	void zoom_in();
 	void zoom_out();
 	void reset_zoom();

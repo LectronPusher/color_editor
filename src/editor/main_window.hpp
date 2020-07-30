@@ -25,6 +25,7 @@ public slots:
 	
 protected:
 	void closeEvent(QCloseEvent *event);
+	void keyPressEvent(QKeyEvent *event) override;
 	
 private:
 	// all the data in one little bundle, shared with image_view

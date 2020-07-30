@@ -75,6 +75,10 @@ void image_view::save_as() {
 	}
 }
 
+void image_view::update_rect(const QRect &scene_rect) {
+	updateScene({scene_rect});
+}
+
 void image_view::zoom_in() {
 	scale(scale_factor, scale_factor);
 }

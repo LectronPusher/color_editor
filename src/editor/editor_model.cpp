@@ -1,5 +1,7 @@
 #include "editor_model.hpp"
 
+#include <QDebug>
+
 namespace editor {
 
 const QImage editor_model::image() {
@@ -52,26 +54,95 @@ void editor_model::set_mask(const mask_pair& pair) {
 
 void editor_model::add_region(const select_region &region_pair) {
 	QRegion region = region_pair.first;
-	switch (region_pair.second) {
+	select_type s_type = region_pair.second;
+	qDebug("add");
+	switch (s_type) {
 		case select:
-			selected |= region;
+			apply_change({s_type, region - selected});
 			break;
 		case exclude:
-			excluded |= region;
+			apply_change({s_type, region - excluded});
 			break;
 		case remove:
-			excluded -= region;
-			selected -= region;
+			apply_change({s_type, {region - selected, region - excluded}});
 			break;
+		case clear:
+			apply_change({s_type, {selected, excluded}});
 	}
-	combined = selected - excluded;
+	qDebug("clear undone");
+	undone_changes.clear();
 }
 
 void editor_model::clear_regions() {
-	selected = QRegion();
-	excluded = QRegion();
-	combined = QRegion();
-	mask = QImage();
+	add_region({QRegion(), clear});
+}
+
+void editor_model::apply_change(const undo_data &data) {
+	qDebug("apply");
+	switch (data.s_type) {
+		case select:
+			selected |= data.added_region;
+			break;
+		case exclude:
+			excluded |= data.added_region;
+			break;
+		case remove:
+			selected -= data.removed_regions.first;
+			excluded -= data.removed_regions.second;
+			break;
+		case clear:
+			selected = QRegion();
+			excluded = QRegion();
+	}
+	qDebug("push");
+	applied_changes.push_back(data);
+	qDebug("combine");
+	combined = selected - excluded;
+}
+
+void editor_model::undo() {
+	if (!applied_changes.empty()) {
+		qDebug("undo");
+		const undo_data &data = applied_changes.back();
+		switch (data.s_type) {
+			case select:
+				selected -= data.added_region;
+				break;
+			case exclude:
+				excluded -= data.added_region;
+				break;
+			case remove:
+				selected |= data.removed_regions.first;
+				excluded |= data.removed_regions.second;
+				break;
+			case clear:
+				selected = data.removed_regions.first;
+				excluded = data.removed_regions.second;
+		}
+		qDebug("push");
+		undone_changes.push_back(data);
+		qDebug("pop");
+		applied_changes.pop_back();
+		combined = selected - excluded;
+	}
+}
+
+void editor_model::redo() {
+	if (!undone_changes.empty()) {
+		qDebug("redo");
+		apply_change(undone_changes.back());
+		qDebug("pop");
+		undone_changes.pop_back();
+	}
+}
+
+void editor_model::combine_recent_undos(int n) {
+	int size = applied_changes.size();
+	if (size >= n) {
+		for (int i = 0; i < n; ++i) {
+			; // TODO
+		}
+	}
 }
 
 const QImage editor_model::apply_mask() {
@@ -95,6 +166,36 @@ void editor_model::paint_on(QPainter *painter, const QBrush &background) {
 		painter->drawImage(region_rect(), mask);
 		painter->restore();
 	}
+}
+
+editor_model::undo_data::undo_data(select_type type, QRegion region)
+: s_type(type), added_region(region) {}
+
+editor_model::undo_data::undo_data(select_type type, region_pair regions)
+: s_type(type), removed_regions(regions) {}
+
+editor_model::undo_data::undo_data(const undo_data &other) {
+	s_type = other.s_type;
+	if (s_type == remove || s_type == clear)
+		new(&removed_regions) region_pair(other.removed_regions);
+	else
+		new(&added_region) QRegion(other.added_region);
+}
+
+editor_model::undo_data editor_model::undo_data::operator=(const undo_data &other) {
+	s_type = other.s_type;
+	if (s_type == remove || s_type == clear)
+		new(&removed_regions) region_pair(other.removed_regions);
+	else
+		new(&added_region) QRegion(other.added_region);
+	return *this;
+}
+
+editor_model::undo_data::~undo_data() {
+	if (s_type == remove || s_type == clear)
+		removed_regions.~region_pair();
+	else
+		added_region.~QRegion();
 }
 
 } // editor
