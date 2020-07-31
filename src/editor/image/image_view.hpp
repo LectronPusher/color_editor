@@ -36,15 +36,19 @@ signals:
 protected:
 	void mouseMoveEvent(QMouseEvent *event);
 	void mousePressEvent(QMouseEvent *event);
+	void mouseReleaseEvent(QMouseEvent *event);
 	
 private:
 	editor_model *model;
 	const qreal scale_factor = 1.2;
 	
+	int mouse_move_count;
+	QPoint last_position;
+	
 	QFileInfo old_file = QFileInfo("/home/ian/all/coding/c++/color_editor/data/");
 // 	QFileInfo old_file = QFileInfo(QDir::homePath());
 	
-	QPoint scene_point(const QPoint &pos);
+	QPoint scene_point(const QPoint &view_point);
 	void set_image(const QImage &image);
 	
 }; // image_view

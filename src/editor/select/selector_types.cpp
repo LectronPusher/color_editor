@@ -21,10 +21,10 @@ select_all::select_all() : selector("Select All") {
 	select_b->setText("Select");
 	
 	connect(exclude_b, &QToolButton::clicked, this, [=](){
-		emit selector::region_selected({ model->image_rect(), editor_model::exclude });
+		emit selector::region_selected({editor_model::exclude, model->image_rect()});
 	});
 	connect(select_b, &QToolButton::clicked, this, [=](){
-		emit selector::region_selected({ model->image_rect(), editor_model::select });
+		emit selector::region_selected({editor_model::select, model->image_rect()});
 	});
 	
 	auto hbox = new QHBoxLayout;
@@ -45,8 +45,8 @@ draw::draw() : selector("Draw") {
 	region_type->addItem("Circle", QRegion::Ellipse);
 	region_type->addItem("Square", QRegion::Rectangle);
 	
-	exclude_mm = new mouse_mode(mouse_mode::point, "Exclude");
-	select_mm = new mouse_mode(mouse_mode::point, "Select");
+	exclude_mm = new mouse_mode(mouse_mode::combined_points, "Exclude");
+	select_mm = new mouse_mode(mouse_mode::combined_points, "Select");
 	
 	auto hbox = new QHBoxLayout;
 	hbox->addWidget(new QLabel("Size:"));
@@ -70,8 +70,10 @@ void draw::point_selected(const QPoint &point) {
 	QRegion new_region(rect, r_type);
 	new_region = new_region.intersected(model->image_rect());
 	
-	auto s_type = (exclude_mm->isChecked()) ? editor_model::exclude : editor_model::select;
-	emit selector::region_selected({ new_region, s_type});
+	if (exclude_mm->isChecked())
+		emit selector::region_selected({editor_model::exclude, new_region});
+	else
+		emit selector::region_selected({editor_model::select, new_region});
 }
 
 QRect draw::create_rect(const QPoint &point) {
@@ -89,17 +91,17 @@ color_match::color_match() : selector("Match Colors") {
 	auto select_b = new QToolButton;
 	select_b->setText("Select");
 	source_color = new color::color_label;
-	choose_color = new mouse_mode(mouse_mode::point, "Choose Color");
+	choose_color = new mouse_mode(mouse_mode::single_point, "Choose Color");
 	fuzziness = new QSpinBox;
 	fuzziness->setRange(0, 100);
 	fuzziness->setValue(10);
 	fuzziness->setSuffix("%");
 	
 	connect(exclude_b, &QToolButton::clicked, this, [=](){
-		emit selector::region_selected({ matching_pixels(), editor_model::exclude });
+		emit selector::region_selected({editor_model::exclude, matching_pixels()});
 	});
 	connect(select_b, &QToolButton::clicked, this, [=](){
-		emit selector::region_selected({ matching_pixels(), editor_model::select });
+		emit selector::region_selected({editor_model::select, matching_pixels()});
 	});
 	
 	auto hbox = new QHBoxLayout;
@@ -118,33 +120,30 @@ color_match::color_match() : selector("Match Colors") {
 }
 
 void color_match::point_selected(const QPoint &point) {
-	if (model->image_rect().contains(point))
-		source_color->set_color(model->image().pixelColor(point));
+	if (choose_color->isChecked())
+		if (model->image_rect().contains(point))
+			source_color->set_color(model->image().pixelColor(point));
 }
 
 QRegion color_match::matching_pixels() {
-	const int fuzzy = fuzziness->value();
-	const QRgb &source = source_color->color().rgb();
+	int fuzzy = fuzziness->value();
+	QRgb source = source_color->color().rgb();
 	
 	QRegion region;
-	if (fuzzy == 100) {
+	if (fuzzy == 100)
 		region = model->image_rect();
-	} else if (fuzzy == 0) {
+	else if (fuzzy == 0)
 		region = matching_bitmap(source);
-	} else {
-		foreach (QRgb rgb, model->color_table()) {
+	else
+		foreach (QRgb rgb, model->color_table())
 			if (ColorUtils::getColorDeltaE(rgb, source) <= fuzzy)
 				region |= matching_bitmap(rgb);
-		}
-	}
-	
 	return region;
 }
 
 QBitmap color_match::matching_bitmap(const QRgb &rgb) {
 	QImage mask = model->image().createMaskFromColor(rgb, Qt::MaskOutColor);
 	return QBitmap::fromImage(mask);
-	
 }
 // end color_match
 

@@ -11,7 +11,7 @@ class mouse_mode : public QCheckBox {
 	Q_OBJECT
 	
 public:
-	enum mode_enum {none, pan, point, single_point};
+	enum mode_enum {none, pan, combined_points, single_point};
 	
 	mouse_mode(mode_enum mode_in, QString text);
 	static void set_global_mode(mode_enum new_mode);

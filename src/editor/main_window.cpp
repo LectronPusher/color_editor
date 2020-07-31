@@ -34,6 +34,25 @@ main_window::main_window(QWidget *parent) : QWidget(parent) {
 	// requires tool_panel_wrapper, doesn't work without it
 	tool_panels->setSizeConstraint(QLayout::SetFixedSize);
 	
+	// all major connections
+	connect(model, &editor_model::boundary_rect_updated,
+			this, &main_window::effect_altered);
+	connect(model, &editor_model::contents_updated,
+			view, &image::image_view::update_rect);
+	// selectors
+	for (int i = 0; i < selector_stack->count(); ++i) {
+		select::selector *sel = selector_stack->at(i);
+		connect(sel, &select::selector::region_selected,
+				this, &main_window::region_selected);
+		connect(view, &image::image_view::point_selected,
+				sel, &select::selector::point_selected);
+	}
+	// effects
+	for (int i = 0; i < effect_stack->count(); ++i) {
+		connect(effect_stack->at(i), &color::effect::altered,
+				this, &main_window::effect_altered);
+	}
+	
 	auto all_panels = new QHBoxLayout;
 	all_panels->addLayout(image_panel);
 	all_panels->addWidget(tool_panel_wrapper);
@@ -43,23 +62,28 @@ main_window::main_window(QWidget *parent) : QWidget(parent) {
 	view->open_image("/home/ian/all/coding/c++/color_editor/data/mantis300.jpg");
 }
 
+QToolButton *tool_button_text(const QString&text) {
+	auto button= new QToolButton;
+	button->setText(text);
+	return button;
+}
+
 void main_window::setup_image_panel(QVBoxLayout *panel_layout) {
 	view = new image::image_view(model);
 	mouse_mode::set_view(view);
 	
-	auto open_b = new QToolButton;
-	open_b->setText("Open");
-	auto save_as_b = new QToolButton;
-	save_as_b->setText("Save As");
-	auto zoom_in_b = new QToolButton;
-	zoom_in_b->setText("Zoom In");
-	auto zoom_out_b = new QToolButton;
-	zoom_out_b->setText("Zoom Out");
-	auto reset_zoom_b = new QToolButton;
-	reset_zoom_b->setText("100%");
+	auto open_b = tool_button_text("Open");
+	auto save_as_b = tool_button_text("Save As");
+	auto undo_b = tool_button_text("Undo");
+	auto redo_b = tool_button_text("Redo");
+	auto zoom_in_b = tool_button_text("Zoom In");
+	auto zoom_out_b = tool_button_text("Zoom Out");
+	auto reset_zoom_b = tool_button_text("100%");
 	
 	connect(open_b, &QToolButton::clicked, view, [=](){ view->open_image(); });
 	connect(save_as_b, &QToolButton::clicked, view, &image::image_view::save_as);
+	connect(undo_b, &QToolButton::clicked, model, &editor_model::undo);
+	connect(redo_b, &QToolButton::clicked, model, &editor_model::redo);
 	connect(zoom_in_b, &QToolButton::clicked, view, &image::image_view::zoom_in);
 	connect(zoom_out_b, &QToolButton::clicked, view, &image::image_view::zoom_out);
 	connect(reset_zoom_b, &QToolButton::clicked, view, &image::image_view::reset_zoom);
@@ -67,6 +91,8 @@ void main_window::setup_image_panel(QVBoxLayout *panel_layout) {
 	auto image_buttons = new QHBoxLayout;
 	image_buttons->addWidget(open_b);
 	image_buttons->addWidget(save_as_b);
+	image_buttons->addWidget(undo_b);
+	image_buttons->addWidget(redo_b);
 	image_buttons->addWidget(zoom_in_b);
 	image_buttons->addWidget(zoom_out_b);
 	image_buttons->addWidget(reset_zoom_b);
@@ -84,16 +110,8 @@ void main_window::setup_select_panel(QVBoxLayout *panel_layout) {
 	selector_stack->add(new select::selector_types::color_match);
 	
 	remove_selection = new QCheckBox("Remove From Both");
-	auto clear_b = new QToolButton;
-	clear_b->setText("Clear Selection");
 	
-	for (int i = 0; i < selector_stack->count(); ++i) {
-		select::selector *sel = selector_stack->at(i);
-		connect(sel, &select::selector::region_selected,
-				this, &main_window::region_selected);
-		connect(view, &image::image_view::point_selected,
-				sel, &select::selector::point_selected);
-	}
+	auto clear_b = tool_button_text("Clear Selection");
 	connect(clear_b, &QToolButton::clicked, this, [=](){ model->clear_regions(); });
 	
 	panel_layout->addWidget(selector_stack);
@@ -110,14 +128,9 @@ void main_window::setup_color_panel(QVBoxLayout *panel_layout) {
 	effect_stack->add(new color::effect_types::gradient);
 	effect_stack->add(new color::effect_types::pixellate);
 	
-	auto store_b = new QToolButton;
-	store_b->setText("Save Effect to Image");
-	
-	for (int i = 0; i < effect_stack->count(); ++i) {
-		connect(effect_stack->at(i), &color::effect::altered,
-				this, &main_window::effect_altered);
-	}
-	connect(store_b, &QToolButton::clicked, view, [=](){ model->apply_mask(); });
+	auto store_b = tool_button_text("Save Effect to Image");
+	connect(store_b, &QToolButton::clicked,
+			this, [=](){ model->set_image(model->apply_mask()); });
 	
 	panel_layout->addWidget(effect_stack);
 	panel_layout->addWidget(store_b);
@@ -126,11 +139,8 @@ void main_window::setup_color_panel(QVBoxLayout *panel_layout) {
 
 void main_window::region_selected(editor_model::select_region region) {
 	if (remove_selection->isChecked())
-		region.second = editor_model::remove;
-	QRect old_rect = model->region_rect();
+		region.first = editor_model::remove;
 	model->add_region(region);
-	if (old_rect != model->region_rect())
-		effect_altered();
 }
 
 void main_window::effect_altered() {

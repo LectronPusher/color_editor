@@ -7,8 +7,7 @@
 #include <QPainter>
 #include <QSet>
 
-#include <QStack>
-#include <list>
+#include <forward_list>
 
 namespace editor {
 
@@ -23,23 +22,24 @@ public:
 	};
 	
 	enum select_type {select, exclude, remove, clear};
-	typedef QPair<QRegion, select_type> select_region;
+	typedef QPair<select_type, QRegion> select_region;
 	typedef QPair<QRegion, QRegion> region_pair; // selected first, excluded second
 	
 private:
-	struct undo_data {
-		undo_data(select_type type, QRegion region);
-		undo_data(select_type type, region_pair regions);
-		undo_data(const undo_data &other);
-		undo_data operator=(const undo_data &other);
-		~undo_data();
+	struct region_change {
+		region_change(select_type type, QRegion region);
+		region_change(select_type type, region_pair regions);
+		
+		region_change(const region_change &other);
+		region_change operator=(const region_change &other);
+		~region_change();
 		
 		select_type s_type;
 		union {
 			QRegion added_region;
 			region_pair removed_regions;
 		};
-	}; // undo_data
+	}; // region_change
 	
 public:
 	const QImage image();
@@ -58,10 +58,9 @@ public:
 	void clear_regions();
 	void undo();
 	void redo();
-	void combine_recent_undos(int n);
+	void combine_recent_changes(int n);
 	
 signals:
-	void image_changed(QImage image);
 	void contents_updated(QRect rect);
 	void boundary_rect_updated(QRect rect);
 	
@@ -76,10 +75,10 @@ private:
 	QRegion excluded;
 	QRegion combined;
 	
-	QStack<undo_data> applied_changes;
-	QStack<undo_data> undone_changes;
+	std::forward_list<region_change> applied_changes;
+	std::forward_list<region_change> undone_changes;
 	
-	void apply_change(const undo_data &data);
+	void apply_change(const region_change &data);
 	void update_combined();
 	void update_color_table();
 	

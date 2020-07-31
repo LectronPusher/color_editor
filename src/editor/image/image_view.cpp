@@ -18,8 +18,6 @@ image_view::image_view(editor_model *model, QWidget *parent)
 	scene()->setBackgroundBrush(Qt::darkGray);
 	scene()->addItem(new image_base(model));
 	
-	connect(model, &editor_model::contents_updated, this, &image_view::update_rect);
-	
 	update_mouse_mode();
 }
 
@@ -126,46 +124,61 @@ void image_view::update_mouse_mode() {
 	static QCursor circle_cursor = setup_circle_cursor();
 	
 	switch (mouse_mode::mode()) {
-	case mouse_mode::none:
-		setDragMode(QGraphicsView::NoDrag);
-		viewport()->setCursor(Qt::ArrowCursor);
-		break;
-	case mouse_mode::pan:
-		setDragMode(QGraphicsView::ScrollHandDrag);
-		break;
-	case mouse_mode::single_point:
-	case mouse_mode::point:
-		setDragMode(QGraphicsView::NoDrag);
-		viewport()->setCursor(circle_cursor);
+		case mouse_mode::none:
+			setDragMode(QGraphicsView::NoDrag);
+			viewport()->setCursor(Qt::ArrowCursor);
+			break;
+		case mouse_mode::pan:
+			setDragMode(QGraphicsView::ScrollHandDrag);
+			break;
+		case mouse_mode::single_point:
+		case mouse_mode::combined_points:
+			setDragMode(QGraphicsView::NoDrag);
+			viewport()->setCursor(circle_cursor);
 	}
 }
 
 void image_view::mouseMoveEvent(QMouseEvent *event) {
-	if (mouse_mode::mode() == mouse_mode::point) {
-		QPoint point = scene_point(event->pos());
-		emit point_selected(point);
+	if (mouse_mode::mode() == mouse_mode::combined_points) {
+		event->accept();
+		QPoint position = scene_point(event->pos());
+		if (position != last_position) {
+			++mouse_move_count;
+			last_position = position;
+			emit point_selected(position);
+		}
 	}
-	QGraphicsView::mouseMoveEvent(event);
 }
 
 void image_view::mousePressEvent(QMouseEvent *event) {
 	if (event->button() == Qt::LeftButton) {
-		QPoint point = scene_point(event->pos());
-		
-		if (mouse_mode::mode() == mouse_mode::single_point) {
-			if (model->image_rect().contains(point)) {
-				mouse_mode::set_global_mode(mouse_mode::none);
-				emit point_selected(point);
-			}
-		} else if (mouse_mode::mode() == mouse_mode::point) {
-			emit point_selected(point);
+		QPoint position = scene_point(event->pos());
+		switch (mouse_mode::mode()) {
+			case mouse_mode::combined_points:
+				mouse_move_count = 1;
+				last_position = position;
+				// fall through
+			case mouse_mode::single_point:
+				emit point_selected(position);
+			default:
+				break;
 		}
 	}
-	QGraphicsView::mousePressEvent(event);
 }
 
-QPoint image_view::scene_point(const QPoint &pos) {
-	QPointF pf = mapToScene(pos);
+void image_view::mouseReleaseEvent(QMouseEvent *event) {
+	if (event->button() == Qt::LeftButton) {
+		if (mouse_mode::mode() == mouse_mode::combined_points) {
+			event->accept();
+			model->combine_recent_changes(mouse_move_count);
+			mouse_move_count = 0;
+			last_position = QPoint();
+		}
+	}
+}
+
+QPoint image_view::scene_point(const QPoint &view_point) {
+	QPointF pf = mapToScene(view_point);
 	// QPointF::toPoint() rounds to the nearest value, I'd rather always round down
 	return QPoint((int)pf.x(), (int)pf.y());
 }
