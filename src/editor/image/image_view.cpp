@@ -1,81 +1,39 @@
 #include "image_view.hpp"
 #include "../mouse_mode.hpp"
 
-#include <QFileDialog>
-#include <QMessageBox>
-#include <QTextStream>
 #include <QCursor>
 #include <QBitmap>
 #include <QPainter>
-#include <QDebug>
 
 namespace editor{
 namespace image {
 
-image_view::image_view(editor_model *model, QWidget *parent)
-: QGraphicsView(parent), model(model) {
+image_view::image_view(QWidget *parent)
+: QGraphicsView(parent) {
 	setScene(new QGraphicsScene(this));
 	scene()->setBackgroundBrush(Qt::darkGray);
-	scene()->addItem(new image_base(model));
 	
 	update_mouse_mode();
 }
 
-bool image_view::modifications_resolved() {
-	if (model->is_altered()) {
-		auto dialog_ans = QMessageBox::warning(
-			this,
-			"Unsaved Changes",
-			"The image has been modified.\nDo you want to save your changes?",
-			QMessageBox::Save | QMessageBox::Discard | QMessageBox::Cancel
-		);
-		if (dialog_ans == QMessageBox::Cancel)
-			return false;
-		else if (dialog_ans == QMessageBox::Save)
-			save_as();
-	}
-	return true;
-}
-
-void image_view::open_image(QString filepath) {
-	if (modifications_resolved()) {
-		if (filepath.isEmpty()) {
-			filepath = QFileDialog::getOpenFileName(
-				this,
-				"Open Image",
-				old_file.dir().path(),
-				"Image Files (*.png *.jpg *.bmp)"
-			);
-		}
-		if (!filepath.isEmpty()) {
-			old_file = QFileInfo(filepath);
-			QImage image = QImage(filepath);
-			if (!image.isNull()) {
-				set_image(image);
-			} else
-				QTextStream(stdout) << "loading failed:" << filepath << Qt::endl;
-		}
+void image_view::reset_view_rect(const QRect &rect) {
+	reset_zoom();
+	scene()->setSceneRect(rect);
+	
+	// scale down the image if larger than the viewport, handle scrollbar bug
+	QSize v_size = viewport()->size();
+	if (rect.width() > v_size.width() || rect.height() > v_size.height()) {
+		setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+		setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+		
+		fitInView(sceneRect(), Qt::KeepAspectRatio);
+		
+		setHorizontalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+		setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
 	}
 }
 
-void image_view::save_as() {
-	if (!model->image().isNull()) {
-		QString filepath = QFileDialog::getSaveFileName(
-			this,
-			"Save As",
-			old_file.filePath(),
-			"Image Files (*.png *.jpg *.bmp);;All Files (*)"
-		);
-		if (!filepath.isEmpty()) {
-			QImage image = model->apply_mask();
-			image.save(filepath);
-			set_image(image);
-			old_file = QFileInfo(filepath);
-		}
-	}
-}
-
-void image_view::update_rect(const QRect &scene_rect) {
+void image_view::redraw_rect(const QRect &scene_rect) {
 	updateScene({scene_rect});
 }
 
@@ -129,6 +87,7 @@ void image_view::update_mouse_mode() {
 			viewport()->setCursor(Qt::ArrowCursor);
 			break;
 		case mouse_mode::pan:
+			// TODO pan not working
 			setDragMode(QGraphicsView::ScrollHandDrag);
 			break;
 		case mouse_mode::single_point:
@@ -170,7 +129,7 @@ void image_view::mouseReleaseEvent(QMouseEvent *event) {
 	if (event->button() == Qt::LeftButton) {
 		if (mouse_mode::mode() == mouse_mode::combined_points) {
 			event->accept();
-			model->combine_recent_changes(mouse_move_count);
+			emit combine_points(mouse_move_count);
 			mouse_move_count = 0;
 			last_position = QPoint();
 		}
@@ -181,25 +140,6 @@ QPoint image_view::scene_point(const QPoint &view_point) {
 	QPointF pf = mapToScene(view_point);
 	// QPointF::toPoint() rounds to the nearest value, I'd rather always round down
 	return QPoint((int)pf.x(), (int)pf.y());
-}
-
-void image_view::set_image(const QImage &image) {
-	model->set_image(image);
-	reset_zoom();
-	scene()->setSceneRect(model->image_rect());
-	
-	// scale down the image if larger than the viewport, handle scrollbar bug
-	QSize i_size = image.size();
-	QSize v_size = viewport()->size();
-	if (i_size.width() > v_size.width() || i_size.height() > v_size.height()) {
-		setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-		setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-		
-		fitInView(sceneRect(), Qt::KeepAspectRatio);
-		
-		setHorizontalScrollBarPolicy(Qt::ScrollBarAsNeeded);
-		setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
-	}
 }
 
 } // image

@@ -1,11 +1,9 @@
 #pragma once
 
 #include <QObject>
-#include <QPair>
 #include <QImage>
 #include <QRegion>
 #include <QPainter>
-#include <QSet>
 
 #include <forward_list>
 
@@ -16,20 +14,16 @@ class editor_model : public QObject {
 	
 public:
 	enum painting_mode {over, replace};
-	struct mask_pair : public QPair<QImage, painting_mode> {
-		mask_pair(QImage image, painting_mode mode = over)
-		: QPair<QImage, painting_mode>(image, mode) {};
-	};
-	
+	const static painting_mode default_mode = over;
 	enum select_type {select, exclude, remove, clear};
-	typedef QPair<select_type, QRegion> select_region;
-	typedef QPair<QRegion, QRegion> region_pair; // selected first, excluded second
+	struct select_region { select_type s_type; QRegion region; };
 	
 private:
+	struct region_pair { QRegion selected; QRegion excluded; };
 	struct region_change {
 		region_change(select_type type, QRegion region);
 		region_change(select_type type, region_pair regions);
-		
+		// boilerplate for union
 		region_change(const region_change &other);
 		region_change operator=(const region_change &other);
 		~region_change();
@@ -42,31 +36,33 @@ private:
 	}; // region_change
 	
 public:
-	const QImage image();
+	const QImage source_image();
 	const QRect image_rect();
 	const QRegion selected_region();
 	const QRect region_rect();
-	const QSet<QRgb> color_table();
 	bool is_altered();
 	
+public slots:
 	void set_image(const QImage &new_image);
-	void set_mask(const mask_pair& pair);
-	const QImage apply_mask();
-	void paint_on(QPainter *painter, const QBrush &background = Qt::NoBrush);
 	
-	void add_region(const select_region &region_pair);
+	void set_mask(const QImage& new_mask, painting_mode new_mode = default_mode);
+	void apply_mask();
+	void draw_mask(QPainter *painter, const QBrush &background = Qt::NoBrush);
+	
+	void add_region(const QRegion &region, select_type s_type);
+	void add_region(const select_region &region);
 	void clear_regions();
 	void undo();
 	void redo();
 	void combine_recent_changes(int n);
 	
 signals:
-	void contents_updated(QRect rect);
-	void boundary_rect_updated(QRect rect);
+	void image_changed(const QImage &new_image);
+	void contents_updated(QRect new_contents_rect);
+	void region_boundary_updated(QRect new_boundary);
 	
 private:
-	QImage _image;
-	QSet<QRgb> _color_table;
+	QImage image;
 	
 	QImage mask;
 	painting_mode mode;
@@ -80,7 +76,6 @@ private:
 	
 	void apply_change(const region_change &data);
 	void update_combined();
-	void update_color_table();
 	
 }; // editor_model
 

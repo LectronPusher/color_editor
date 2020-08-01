@@ -3,6 +3,7 @@
 #include "editor_model.hpp"
 #include "widget_stack.hpp"
 #include "image/image_view.hpp"
+#include "image/image_base.hpp"
 #include "select/selector.hpp"
 #include "color/effect.hpp"
 
@@ -10,6 +11,8 @@
 #include <QCloseEvent>
 #include <QVBoxLayout>
 #include <QCheckBox>
+#include <QFileInfo>
+#include <QDir>
 
 namespace editor {
 
@@ -21,28 +24,40 @@ public:
 	
 public slots:
 	void region_selected(editor_model::select_region region);
-	void effect_altered();
+	void reapply_effect();
+	
+	void image_changed(const QImage &image);
+	
+	void open_image(QString filepath = QString());
+	void save_as();
 	
 protected:
 	void closeEvent(QCloseEvent *event);
 	void keyPressEvent(QKeyEvent *event) override;
 	
 private:
-	// all the data in one little bundle, shared with image_view
+	// all the data in one little bundle, shared with image_view and selectors
 	editor_model *model;
-	// stores the image and handles rendering and mouse input for the image
+	// handles rendering and mouse input for the image
 	image::image_view *view;
+	// changing pointer to the item shown in view
+	image::image_base *base;
 	// stores the available selectors and their algorithms
 	widget_stack<select::selector> *selector_stack;
 	// checkbox for selector option
 	QCheckBox *remove_selection;
 	// stores the available color effects and their algorithms
 	widget_stack<color::effect> *effect_stack;
+	// which file was previously open, starts at the home directory
+	QFileInfo previous_file = QDir::homePath();
 	
 	void setup_image_panel(QVBoxLayout *panel_layout);
 	void setup_select_panel(QVBoxLayout *panel_layout);
 	void setup_color_panel(QVBoxLayout *panel_layout);
 	
+	void make_major_connections();
+	
+	bool modifications_resolved();
 }; // main_window
 
 } // editor

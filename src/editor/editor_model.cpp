@@ -4,12 +4,12 @@
 
 namespace editor {
 
-const QImage editor_model::image() {
-	return _image;
+const QImage editor_model::source_image() {
+	return image;
 }
 
 const QRect editor_model::image_rect() {
-	return image().rect();
+	return image.rect();
 }
 
 const QRegion editor_model::selected_region() {
@@ -17,11 +17,7 @@ const QRegion editor_model::selected_region() {
 }
 
 const QRect editor_model::region_rect() {
-	return selected_region().boundingRect();
-}
-
-const QSet<QRgb> editor_model::color_table() {
-	return _color_table;
+	return combined.boundingRect();
 }
 
 bool editor_model::is_altered() {
@@ -32,35 +28,32 @@ void editor_model::set_image(const QImage &new_image) {
 	clear_regions();
 	applied_changes.clear();
 	undone_changes.clear();
-	_image = new_image;
-	update_color_table();
+	image = new_image.convertToFormat(QImage::Format_ARGB32);
+	emit image_changed(image);
 }
 
-void editor_model::update_color_table() {
-	_color_table.clear();
-	_color_table.reserve(1000);
-	for (int row = 0; row < image().width(); ++row) {
-		for (int col = 0; col < image().height(); ++col) {
-			_color_table.insert(image().pixel(row, col));
-		}
-	}
-	_color_table.squeeze();
+void editor_model::set_mask(const QImage& new_mask, painting_mode new_mode) {
+	bool mask_changed = mask != new_mask;
+	bool mode_changed = mode != new_mode;
+	if (mask_changed)
+		mask = new_mask;
+	if (mode_changed)
+		mode = new_mode;
+	if (mask_changed || mode_changed)
+		emit contents_updated(region_rect());
 }
 
-void editor_model::set_mask(const mask_pair& pair) {
-	mask = pair.first;
-	mode = pair.second;
-	emit contents_updated(region_rect());
+void editor_model::apply_mask() {
+	QPainter painter(&image);
+	draw_mask(&painter);
+	set_mask(QImage());
+	clear_regions();
+	applied_changes.clear();
+	undone_changes.clear();
+	emit image_changed(image);
 }
 
-const QImage editor_model::apply_mask() {
-	QPainter painter(&_image);
-	paint_on(&painter);
-	mask = QImage();
-	return _image;
-}
-
-void editor_model::paint_on(QPainter *painter, const QBrush &background) {
+void editor_model::draw_mask(QPainter *painter, const QBrush &background) {
 	if (!mask.isNull()) {
 		painter->save();
 		painter->setClipRegion(selected_region());
@@ -76,9 +69,7 @@ void editor_model::paint_on(QPainter *painter, const QBrush &background) {
 	}
 }
 
-void editor_model::add_region(const select_region &region_pair) {
-	select_type s_type = region_pair.first;
-	QRegion region = region_pair.second;
+void editor_model::add_region(const QRegion &region, select_type s_type) {
 	switch (s_type) {
 		case select:
 			apply_change({s_type, region - selected});
@@ -95,8 +86,12 @@ void editor_model::add_region(const select_region &region_pair) {
 	undone_changes.clear();
 }
 
+void editor_model::add_region(const select_region &s_region) {
+	add_region(s_region.region, s_region.s_type);
+}
+
 void editor_model::clear_regions() {
-	add_region({clear, QRegion()});
+	add_region(QRegion(), clear);
 }
 
 void editor_model::apply_change(const region_change &data) {
@@ -110,8 +105,8 @@ void editor_model::apply_change(const region_change &data) {
 		case remove:
 			if (applied_changes.empty())
 				return;
-			selected -= data.removed_regions.first;
-			excluded -= data.removed_regions.second;
+			selected -= data.removed_regions.selected;
+			excluded -= data.removed_regions.excluded;
 			break;
 		case clear:
 			if (applied_changes.empty())
@@ -125,6 +120,16 @@ void editor_model::apply_change(const region_change &data) {
 	update_combined();
 }
 
+void editor_model::update_combined() {
+	QRegion old = combined;
+	combined = selected - excluded;
+	QRect difference = (combined ^ old).boundingRect();
+	if (!difference.isEmpty())
+		emit contents_updated(difference);
+	if (old.boundingRect() != combined.boundingRect())
+		emit region_boundary_updated(combined.boundingRect());
+}
+
 void editor_model::undo() {
 	if (!applied_changes.empty()) {
 		const region_change &data = applied_changes.front();
@@ -136,27 +141,17 @@ void editor_model::undo() {
 				excluded -= data.added_region;
 				break;
 			case remove:
-				selected |= data.removed_regions.first;
-				excluded |= data.removed_regions.second;
+				selected |= data.removed_regions.selected;
+				excluded |= data.removed_regions.excluded;
 				break;
 			case clear:
-				selected = data.removed_regions.first;
-				excluded = data.removed_regions.second;
+				selected = data.removed_regions.selected;
+				excluded = data.removed_regions.excluded;
 		}
 		undone_changes.push_front(data);
 		applied_changes.pop_front();
 		update_combined();
 	}
-}
-
-void editor_model::update_combined() {
-	QRegion old = combined;
-	combined = selected - excluded;
-	QRect difference = (combined ^ old).boundingRect();
-	if (!difference.isEmpty())
-		emit contents_updated(difference);
-	if (old.boundingRect() != combined.boundingRect())
-		emit boundary_rect_updated(combined.boundingRect());
 }
 
 void editor_model::redo() {
@@ -172,8 +167,8 @@ void editor_model::combine_recent_changes(int n) {
 	for (int i = 1; i < n; ++i) {
 		const region_change &child = applied_changes.front();
 		if (parent.s_type == remove || parent.s_type == clear) {
-			parent.removed_regions.first |= child.removed_regions.first;
-			parent.removed_regions.second |= child.removed_regions.second;
+			parent.removed_regions.selected |= child.removed_regions.selected;
+			parent.removed_regions.excluded |= child.removed_regions.excluded;
 		} else {
 			parent.added_region |= child.added_region;
 		}

@@ -17,7 +17,7 @@ class selector : public QWidget {
 public:
 	selector(QString name_in);
 	const QString name() const;
-	static void set_model(editor_model *new_model);
+	static void update_image(const QImage &new_image);
 	
 public slots:
 	virtual void point_selected(const QPoint &point);
@@ -27,7 +27,10 @@ signals:
 	
 protected:
 	QVBoxLayout *options;
-	static editor_model *model;
+	static QImage image;
+	static QSet<QRgb> color_table;
+	
+	static void update_color_table();
 	
 private:
 	const QString selector_name;

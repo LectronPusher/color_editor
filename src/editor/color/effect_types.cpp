@@ -26,8 +26,8 @@ solid_color::solid_color() : effect("Solid Color") {
 	options->addStretch(1);
 }
 
-editor_model::mask_pair solid_color::create_mask(const QImage &, const QRect &rect) {
-	QImage img(rect.size(), QImage::Format_ARGB32);
+QImage solid_color::create_mask(editor_model *model) {
+	QImage img(model->region_rect().size(), QImage::Format_ARGB32);
 	img.fill(changeable_color->color());
 	return img;
 }
@@ -50,6 +50,7 @@ gradient::gradient() : effect("Gradient") {
 			this, &effect::altered);
 	connect(swap_b, &QToolButton::clicked, this, &gradient::swap_colors);
 	
+	options->addWidget(orient_box);
 	auto hbox = new QHBoxLayout;
 	hbox->addWidget(new QLabel("Color 1:"));
 	hbox->addWidget(color_1);
@@ -58,14 +59,13 @@ gradient::gradient() : effect("Gradient") {
 	hbox->addWidget(new QLabel("Color 2:"));
 	hbox->addWidget(color_2);
 	options->addLayout(hbox);
-	options->addWidget(orient_box);
 	options->addWidget(swap_b);
 	options->setAlignment(swap_b, Qt::AlignCenter);
 	options->addStretch(1);
 }
 
-editor_model::mask_pair gradient::create_mask(const QImage &, const QRect &rect) {
-	QSize size = rect.size();
+QImage gradient::create_mask(editor_model *model) {
+	QSize size = model->region_rect().size();
 	QImage img(size, QImage::Format_ARGB32);
 	QGradient gradient = create_gradient(size);
 	
@@ -142,11 +142,14 @@ void transparent::set_label_transparency(int value) {
 	trans_label->set_color(color);
 }
 
-editor_model::mask_pair transparent::create_mask(const QImage &, const QRect &rect) {
-	QImage img(rect.size(), QImage::Format_ARGB32);
+QImage transparent::create_mask(editor_model *model) {
+	QImage img(model->region_rect().size(), QImage::Format_ARGB32);
 	img.fill(trans_label->color());
-	auto paint_over = override_box->currentData().value<editor_model::painting_mode>();
-	return {img, paint_over};
+	return img;
+}
+
+editor_model::painting_mode transparent::paint_mode() {
+	return override_box->currentData().value<editor_model::painting_mode>();
 }
 // end transparent
 
@@ -168,31 +171,65 @@ pixellate::pixellate() : effect("Pixellate") {
 	options->addStretch(1);
 }
 
-editor_model::mask_pair pixellate::create_mask(const QImage &image, const QRect &rect) {
-	const int size = pixel_size->value();
-	if (size == 1)
-		return {image};
+editor_model::painting_mode pixellate::paint_mode() {
+	return editor_model::replace;
+}
+
+int under_half(int i) {
+	return (i % 2 == 0) ? (i - 1) / 2 : i / 2;
+}
+
+QImage pixellate::create_mask(editor_model *model) {
+	const QRect &rect = model->region_rect();
+	if (rect.isEmpty())
+		return QImage();
+	QImage source = model->source_image().copy(rect);
+	if (pixel_size->value() == 1)
+		return source;
 	
-	QImage pixellated = image.copy(rect);
+	QImage pixellated = source;
 	QPainter painter(&pixellated);
-// 	int start = (size % 2 == 0) ? (size - 1) /2 : size / 2;
-	for (int row = rect.top(); row < image.width(); row += size) {
-		for (int col = rect.left(); col < image.height(); col += size) {
+	painter.setCompositionMode(QPainter::CompositionMode_Source);
+	pixellate_image(&painter, source);
+	return pixellated;
+}
+
+void pixellate::pixellate_image(QPainter *painter, const QImage &source) {
+	int size = pixel_size->value();
+	int h_s = under_half(size);
+	int width = source.width();
+	int height = source.height();
+	
+	// fill main portion of image
+	for (int row = h_s; row < width; row += size) {
+		for (int col = h_s; col < height; col += size) {
 			QPoint point(row, col);
-			painter.fillRect(create_rect(point), pixellated.pixelColor(point));
+			painter->fillRect(create_rect(point), source.pixelColor(point));
 		}
 	}
-// 	if (image.width() % size != 0) {
-// 		painter.fillRect(QRect(QPoint(), QSize()), image.pixelColor(point));
-// 	}
-	
-	return pixellated;
+	// fill remaining edges and bottom right corner
+	int width_mod = (width % size <= h_s) ? width % size : 0;
+	int height_mod = (height % size <= h_s) ? height % size : 0;
+	QRect right(width - width_mod, 0, width_mod, height);
+	QRect bottom(0, height - height_mod, width, height_mod);
+	// fill right
+	for (int col = h_s; col < height; col += size) {
+		QPoint point(width - 1, col);
+		painter->fillRect(right & create_rect(point), source.pixelColor(point));
+	}
+	// fill bottom
+	for (int row = h_s; row < width; row += size) {
+		QPoint point(row, height - 1);
+		painter->fillRect(bottom & create_rect(point), source.pixelColor(point));
+	}
+	// fill corner
+	painter->fillRect(right & bottom, source.pixelColor(width - 1, height - 1));
 }
 
 QRect pixellate::create_rect(const QPoint &point) {
 	int s = pixel_size->value();
-	int b = (s % 2 == 0) ? (s - 1) /2 : s / 2;
-	return QRect(point - QPoint(b, b), QSize(s, s));
+	int h = under_half(s);
+	return {point - QPoint(h, h), QSize(s, s)};
 }
 // end pixellate
 

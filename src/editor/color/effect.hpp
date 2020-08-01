@@ -14,8 +14,8 @@ class effect : public QWidget {
 public:
 	effect(QString name_in);
 	const QString name() const;
-	virtual editor_model::mask_pair create_mask(const QImage &image,
-												const QRect &rect) = 0;
+	virtual editor_model::painting_mode paint_mode();
+	virtual QImage create_mask(editor_model *model) = 0;
 	
 signals:
 	void altered();

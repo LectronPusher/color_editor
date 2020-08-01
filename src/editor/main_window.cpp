@@ -5,6 +5,8 @@
 
 #include <QGridLayout>
 #include <QHBoxLayout>
+#include <QFileDialog>
+#include <QMessageBox>
 #include <QLabel>
 #include <QToolButton>
 #include <QDebug>
@@ -15,7 +17,6 @@ main_window::main_window(QWidget *parent) : QWidget(parent) {
 	setWindowTitle("color editor");
 	
 	model = new editor_model;
-	select::selector::set_model(model);
 	
 	auto hline = new QLabel;
 	hline->setFrameStyle(QFrame::HLine);
@@ -34,24 +35,7 @@ main_window::main_window(QWidget *parent) : QWidget(parent) {
 	// requires tool_panel_wrapper, doesn't work without it
 	tool_panels->setSizeConstraint(QLayout::SetFixedSize);
 	
-	// all major connections
-	connect(model, &editor_model::boundary_rect_updated,
-			this, &main_window::effect_altered);
-	connect(model, &editor_model::contents_updated,
-			view, &image::image_view::update_rect);
-	// selectors
-	for (int i = 0; i < selector_stack->count(); ++i) {
-		select::selector *sel = selector_stack->at(i);
-		connect(sel, &select::selector::region_selected,
-				this, &main_window::region_selected);
-		connect(view, &image::image_view::point_selected,
-				sel, &select::selector::point_selected);
-	}
-	// effects
-	for (int i = 0; i < effect_stack->count(); ++i) {
-		connect(effect_stack->at(i), &color::effect::altered,
-				this, &main_window::effect_altered);
-	}
+	make_major_connections();
 	
 	auto all_panels = new QHBoxLayout;
 	all_panels->addLayout(image_panel);
@@ -59,18 +43,20 @@ main_window::main_window(QWidget *parent) : QWidget(parent) {
 	all_panels->setAlignment(tool_panel_wrapper, Qt::AlignTop);
 	setLayout(all_panels);
 	// default so I don't have to manually load an image every time
-	view->open_image("/home/ian/all/coding/c++/color_editor/data/mantis300.jpg");
+	open_image("../data/mantis300.jpg");
 }
 
-QToolButton *tool_button_text(const QString&text) {
+QToolButton *tool_button_text(const QString &text) {
 	auto button= new QToolButton;
 	button->setText(text);
 	return button;
 }
 
 void main_window::setup_image_panel(QVBoxLayout *panel_layout) {
-	view = new image::image_view(model);
+	view = new image::image_view;
 	mouse_mode::set_view(view);
+	base = new image::image_base(model);
+	view->scene()->addItem(base);
 	
 	auto open_b = tool_button_text("Open");
 	auto save_as_b = tool_button_text("Save As");
@@ -80,8 +66,8 @@ void main_window::setup_image_panel(QVBoxLayout *panel_layout) {
 	auto zoom_out_b = tool_button_text("Zoom Out");
 	auto reset_zoom_b = tool_button_text("100%");
 	
-	connect(open_b, &QToolButton::clicked, view, [=](){ view->open_image(); });
-	connect(save_as_b, &QToolButton::clicked, view, &image::image_view::save_as);
+	connect(open_b, &QToolButton::clicked, this, [=](){ open_image(); });
+	connect(save_as_b, &QToolButton::clicked, this, &main_window::save_as);
 	connect(undo_b, &QToolButton::clicked, model, &editor_model::undo);
 	connect(redo_b, &QToolButton::clicked, model, &editor_model::redo);
 	connect(zoom_in_b, &QToolButton::clicked, view, &image::image_view::zoom_in);
@@ -97,7 +83,7 @@ void main_window::setup_image_panel(QVBoxLayout *panel_layout) {
 	image_buttons->addWidget(zoom_out_b);
 	image_buttons->addWidget(reset_zoom_b);
 	image_buttons->addWidget(new mouse_mode(mouse_mode::pan, "Pan"));
-
+	
 	panel_layout->addLayout(image_buttons);
 	panel_layout->setAlignment(image_buttons, Qt::AlignLeft);
 	panel_layout->addWidget(view);
@@ -112,7 +98,7 @@ void main_window::setup_select_panel(QVBoxLayout *panel_layout) {
 	remove_selection = new QCheckBox("Remove From Both");
 	
 	auto clear_b = tool_button_text("Clear Selection");
-	connect(clear_b, &QToolButton::clicked, this, [=](){ model->clear_regions(); });
+	connect(clear_b, &QToolButton::clicked, model, &editor_model::clear_regions);
 	
 	panel_layout->addWidget(selector_stack);
 	panel_layout->addWidget(remove_selection);
@@ -129,32 +115,109 @@ void main_window::setup_color_panel(QVBoxLayout *panel_layout) {
 	effect_stack->add(new color::effect_types::pixellate);
 	
 	auto store_b = tool_button_text("Save Effect to Image");
-	connect(store_b, &QToolButton::clicked,
-			this, [=](){ model->set_image(model->apply_mask()); });
+	connect(store_b, &QToolButton::clicked, model, &editor_model::apply_mask);
 	
 	panel_layout->addWidget(effect_stack);
 	panel_layout->addWidget(store_b);
 	panel_layout->setAlignment(store_b, Qt::AlignCenter);
 }
 
+void main_window::make_major_connections() {
+	// view
+	connect(model, &editor_model::contents_updated,
+			view, &image::image_view::redraw_rect);
+	connect(model, &editor_model::image_changed,
+			this, &main_window::update_image);
+	// selector
+	for (int i = 0; i < selector_stack->count(); ++i) {
+		select::selector *sel = selector_stack->at(i);
+		connect(sel, &select::selector::region_selected,
+				this, &main_window::region_selected);
+		connect(view, &image::image_view::point_selected,
+				sel, &select::selector::point_selected);
+	}
+	// effect
+	connect(model, &editor_model::region_boundary_updated,
+			this, &main_window::reapply_effect);
+	for (int i = 0; i < effect_stack->count(); ++i) {
+		connect(effect_stack->at(i), &color::effect::altered,
+				this, &main_window::reapply_effect);
+	}
+}
+
 void main_window::region_selected(editor_model::select_region region) {
 	if (remove_selection->isChecked())
-		region.first = editor_model::remove;
+		region.s_type = editor_model::remove;
 	model->add_region(region);
 }
 
-void main_window::effect_altered() {
-	const QImage &image = model->image();
-	const QRect &rect = model->region_rect();
-	auto mask = effect_stack->active()->create_mask(image, rect);
-	model->set_mask(mask);
+void main_window::reapply_effect() {
+	auto effect = effect_stack->active();
+	model->set_mask(effect->create_mask(model), effect->paint_mode());
+}
+
+void main_window::update_image(const QImage &image) {
+	select::selector::update_image(image);
+	base->model = model;
+	view->reset_view_rect(model->image_rect());
+}
+
+void main_window::open_image(QString filepath) {
+	if (modifications_resolved()) {
+		if (filepath.isEmpty()) {
+			filepath = QFileDialog::getOpenFileName(
+				this,
+				"Open Image",
+						   previous_file.dir().path(),
+				"Image Files (*.png *.jpg *.bmp)"
+			);
+		}
+		if (!filepath.isEmpty()) {
+			previous_file = QFileInfo(filepath);
+			QImage image(filepath);
+			if (!image.isNull())
+				model->set_image(image);
+		}
+	}
+}
+
+void main_window::save_as() {
+	if (!model->source_image().isNull()) {
+		QString filepath = QFileDialog::getSaveFileName(
+			this,
+			"Save As",
+							   previous_file.filePath(),
+			"Image Files (*.png *.jpg *.bmp);;All Files (*)"
+		);
+		if (!filepath.isEmpty()) {
+			model->apply_mask();
+			model->source_image().save(filepath);
+			previous_file = QFileInfo(filepath);
+		}
+	}
 }
 
 void main_window::closeEvent(QCloseEvent *event) {
-	if (view->modifications_resolved())
+	if (modifications_resolved())
 		event->accept();
 	else
 		event->ignore();
+}
+
+bool main_window::modifications_resolved() {
+	if (model->is_altered()) {
+		auto dialog_ans = QMessageBox::warning(
+			this,
+			"Unsaved Changes",
+			"The image has been modified.\nDo you want to save your changes?",
+			QMessageBox::Save | QMessageBox::Discard | QMessageBox::Cancel
+		);
+		if (dialog_ans == QMessageBox::Cancel)
+			return false;
+		else if (dialog_ans == QMessageBox::Save)
+			save_as();
+	}
+	return true;
 }
 
 void main_window::keyPressEvent(QKeyEvent *event) {

@@ -21,10 +21,10 @@ select_all::select_all() : selector("Select All") {
 	select_b->setText("Select");
 	
 	connect(exclude_b, &QToolButton::clicked, this, [=](){
-		emit selector::region_selected({editor_model::exclude, model->image_rect()});
+		emit selector::region_selected({editor_model::exclude, image.rect()});
 	});
 	connect(select_b, &QToolButton::clicked, this, [=](){
-		emit selector::region_selected({editor_model::select, model->image_rect()});
+		emit selector::region_selected({editor_model::select, image.rect()});
 	});
 	
 	auto hbox = new QHBoxLayout;
@@ -68,7 +68,7 @@ void draw::point_selected(const QPoint &point) {
 	QRect rect = create_rect(point);
 	auto r_type = region_type->currentData().value<QRegion::RegionType>();
 	QRegion new_region(rect, r_type);
-	new_region = new_region.intersected(model->image_rect());
+	new_region = new_region.intersected(image.rect());
 	
 	if (exclude_mm->isChecked())
 		emit selector::region_selected({editor_model::exclude, new_region});
@@ -121,8 +121,8 @@ color_match::color_match() : selector("Match Colors") {
 
 void color_match::point_selected(const QPoint &point) {
 	if (choose_color->isChecked())
-		if (model->image_rect().contains(point))
-			source_color->set_color(model->image().pixelColor(point));
+		if (image.rect().contains(point))
+			source_color->set_color(image.pixelColor(point));
 }
 
 QRegion color_match::matching_pixels() {
@@ -131,18 +131,18 @@ QRegion color_match::matching_pixels() {
 	
 	QRegion region;
 	if (fuzzy == 100)
-		region = model->image_rect();
+		region = image.rect();
 	else if (fuzzy == 0)
 		region = matching_bitmap(source);
 	else
-		foreach (QRgb rgb, model->color_table())
+		foreach (QRgb rgb, color_table)
 			if (ColorUtils::getColorDeltaE(rgb, source) <= fuzzy)
 				region |= matching_bitmap(rgb);
 	return region;
 }
 
 QBitmap color_match::matching_bitmap(const QRgb &rgb) {
-	QImage mask = model->image().createMaskFromColor(rgb, Qt::MaskOutColor);
+	QImage mask = image.createMaskFromColor(rgb, Qt::MaskOutColor);
 	return QBitmap::fromImage(mask);
 }
 // end color_match

@@ -3,7 +3,8 @@
 namespace editor {
 namespace select {
 
-editor_model *selector::model = nullptr;
+QImage selector::image;
+QSet<QRgb> selector::color_table;
 
 selector::selector(QString name_in) : selector_name(name_in) {
 	options = new QVBoxLayout;
@@ -14,8 +15,20 @@ const QString selector::name() const {
 	return selector_name;
 }
 
-void selector::set_model(editor_model *new_model) {
-	model = new_model;
+void selector::update_image(const QImage &new_image) {
+	image = new_image;
+	update_color_table();
+}
+
+void selector::update_color_table() {
+	color_table.clear();
+	color_table.reserve(1000);
+	for (int row = 0; row < image.width(); ++row) {
+		for (int col = 0; col < image.height(); ++col) {
+			color_table.insert(image.pixel(row, col));
+		}
+	}
+	color_table.squeeze();
 }
 
 void selector::point_selected(const QPoint &) {}

@@ -15,6 +15,8 @@ namespace select {
 namespace selector_types {
 
 class select_all : public selector {
+	Q_OBJECT
+	
 public:
 	select_all();
 	
@@ -28,7 +30,7 @@ public:
 	draw();
 	
 public slots:
-	virtual void point_selected(const QPoint &point) override;
+	void point_selected(const QPoint &point) override;
 	
 private:
 	mouse_mode *exclude_mm;
@@ -49,7 +51,7 @@ public:
 	color_match();
 	
 public slots:
-	virtual void point_selected(const QPoint &point) override;
+	void point_selected(const QPoint &point) override;
 	
 private:
 	color::color_label *source_color;

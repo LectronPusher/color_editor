@@ -5,8 +5,6 @@
 
 #include <QGraphicsView>
 #include <QMouseEvent>
-#include <QDir>
-#include <QFileInfo>
 
 namespace editor{
 namespace image {
@@ -15,14 +13,12 @@ class image_view : public QGraphicsView {
 	Q_OBJECT
 	
 public:
-	image_view(editor_model *model_in, QWidget *parent = nullptr);
-	bool modifications_resolved();
+	image_view(QWidget *parent = nullptr);
 	
 public slots:
-	void open_image(QString filepath = QString());
-	void save_as();
+	void reset_view_rect(const QRect &rect);
 	
-	void update_rect(const QRect &scene_rect);
+	void redraw_rect(const QRect &scene_rect);
 	
 	void zoom_in();
 	void zoom_out();
@@ -32,6 +28,7 @@ public slots:
 	
 signals:
 	void point_selected(QPoint point);
+	void combine_points(int n);
 	
 protected:
 	void mouseMoveEvent(QMouseEvent *event);
@@ -39,17 +36,12 @@ protected:
 	void mouseReleaseEvent(QMouseEvent *event);
 	
 private:
-	editor_model *model;
 	const qreal scale_factor = 1.2;
 	
-	int mouse_move_count;
 	QPoint last_position;
-	
-	QFileInfo old_file = QFileInfo("/home/ian/all/coding/c++/color_editor/data/");
-// 	QFileInfo old_file = QFileInfo(QDir::homePath());
+	int mouse_move_count;
 	
 	QPoint scene_point(const QPoint &view_point);
-	void set_image(const QImage &image);
 	
 }; // image_view
 

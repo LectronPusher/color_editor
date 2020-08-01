@@ -6,16 +6,18 @@
 #include <QComboBox>
 #include <QGradient>
 #include <QSpinBox>
+#include <QPainter>
 
 namespace editor {
 namespace color {
 namespace effect_types {
 
 class solid_color : public effect {
+	Q_OBJECT
+	
 public:
 	solid_color();
-	virtual editor_model::mask_pair create_mask(const QImage &image,
-												const QRect &rect) override;
+	QImage create_mask(editor_model *model) override;
 	
 private:
 	color_label *changeable_color;
@@ -28,8 +30,7 @@ class gradient : public effect {
 	
 public:
 	gradient();
-	virtual editor_model::mask_pair create_mask(const QImage &image,
-												const QRect &rect) override;
+	QImage create_mask(editor_model *model) override;
 	
 private slots:
 	void swap_colors();
@@ -49,8 +50,8 @@ class transparent : public effect {
 	
 public:
 	transparent();
-	virtual editor_model::mask_pair create_mask(const QImage &image,
-												const QRect &rect) override;
+	editor_model::painting_mode paint_mode() override;
+	QImage create_mask(editor_model *model) override;
 	
 private slots:
 	void set_label_transparency(int value);
@@ -63,13 +64,17 @@ private:
 
 
 class pixellate : public effect {
+	Q_OBJECT
+	
 public:
 	pixellate();
-	virtual editor_model::mask_pair create_mask(const QImage &image,
-												const QRect &rect) override;
+	QImage create_mask(editor_model *model) override;
 	
 private:
 	QSpinBox *pixel_size;
+	
+	editor_model::painting_mode paint_mode() override;
+	void pixellate_image(QPainter *painter, const QImage &source);
 	
 	QRect create_rect(const QPoint &point);
 	

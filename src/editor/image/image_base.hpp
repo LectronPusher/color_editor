@@ -16,8 +16,6 @@ public:
 	QRectF boundingRect() const override;
 	void paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
 			   QWidget *widget) override;
-	
-private:
 	editor_model *model;
 	
 }; // image_base
