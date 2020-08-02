@@ -22,6 +22,7 @@ HEADERS += src/editor/main_window.hpp \
 		   src/editor/mouse_mode.hpp \
 		   src/editor/image/image_view.hpp \
 		   src/editor/image/image_base.hpp \
+		   src/editor/image/circle_cursor.hpp \
 		   src/editor/select/selector.hpp \
 		   src/editor/select/selector_types.hpp \
 		   src/editor/color/effect.hpp \
