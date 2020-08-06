@@ -7,7 +7,6 @@ INCLUDEPATH += src/
 SOURCES += src/main.cpp \
 		   src/editor/main_window.cpp \
 		   src/editor/editor_model.cpp \
-		   src/editor/mouse_mode.cpp \
 		   src/editor/image/image_view.cpp \
 		   src/editor/image/image_base.cpp \
 		   src/editor/select/selector.cpp \

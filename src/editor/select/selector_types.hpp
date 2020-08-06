@@ -1,11 +1,9 @@
 #pragma once
 
 #include "selector.hpp"
-#include "../mouse_mode.hpp"
 #include "../color/color_label.hpp"
 
 #include <QCheckBox>
-#include <QButtonGroup>
 #include <QSpinBox>
 #include <QComboBox>
 #include <QBitmap>
@@ -28,14 +26,19 @@ class draw : public selector {
 	
 public:
 	draw();
+	void add_checkboxes_to_group(QButtonGroup *group) override;
 	
 public slots:
 	void point_selected(const QPoint &point) override;
+	void set_last_checkbox(int state);
+	
+protected:
+	virtual void showEvent(QShowEvent *event) override;
 	
 private:
-	mouse_mode *exclude_mm;
-	mouse_mode *select_mm;
-	QButtonGroup *group;
+	QCheckBox *exclude_cb;
+	QCheckBox *select_cb;
+	QCheckBox *last_checkbox = nullptr;
 	QSpinBox *side_length;
 	QComboBox *region_type;
 	
@@ -52,10 +55,15 @@ public:
 	
 public slots:
 	void point_selected(const QPoint &point) override;
+	void add_checkboxes_to_group(QButtonGroup *group) override;
+	
+protected:
+	virtual void showEvent(QShowEvent *event) override;
 	
 private:
 	color::color_label *source_color;
-	mouse_mode *choose_color;
+	QCheckBox *choose_color_cb;
+	QCheckBox *last_checkbox = nullptr;
 	QSpinBox *fuzziness;
 	
 	QRegion matching_pixels();

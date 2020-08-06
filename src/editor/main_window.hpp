@@ -10,6 +10,7 @@
 #include <QWidget>
 #include <QCloseEvent>
 #include <QVBoxLayout>
+#include <QButtonGroup>
 #include <QCheckBox>
 #include <QFileInfo>
 #include <QDir>
@@ -26,7 +27,7 @@ public slots:
 	void region_selected(editor_model::select_region region);
 	void reapply_effect();
 	
-	void image_changed(const QImage &image);
+	void update_image(const QImage &image);
 	
 	void open_image(QString filepath = QString());
 	void save_as();
@@ -38,9 +39,11 @@ protected:
 private:
 	// all the data in one little bundle, shared with image_view and selectors
 	editor_model *model;
-	// handles rendering and mouse input for the image
+	// handles mouse input and some image functions like zooming
 	image::image_view *view;
-	// changing pointer to the item shown in view
+	// communicates the current mouse mode to view,
+	QButtonGroup *mode_button_group;
+	// item stored inside view, handles rendering the image
 	image::image_base *base;
 	// stores the available selectors and their algorithms
 	widget_stack<select::selector> *selector_stack;

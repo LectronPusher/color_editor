@@ -31,7 +31,5 @@ void selector::update_color_table() {
 	color_table.squeeze();
 }
 
-void selector::point_selected(const QPoint &) {}
-
 } // select
 } // editor
