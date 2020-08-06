@@ -3,7 +3,7 @@
 #include "editor_model.hpp"
 #include "widget_stack.hpp"
 #include "image/image_view.hpp"
-#include "image/image_base.hpp"
+#include "image/model_renderer.hpp"
 #include "select/selector.hpp"
 #include "color/effect.hpp"
 
@@ -44,7 +44,7 @@ private:
 	// communicates the current mouse mode to view,
 	QButtonGroup *mode_button_group;
 	// item stored inside view, handles rendering the image
-	image::image_base *base;
+	image::model_renderer *renderer;
 	// stores the available selectors and their algorithms
 	widget_stack<select::selector *> *selector_stack;
 	// checkbox for selector option

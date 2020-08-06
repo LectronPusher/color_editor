@@ -9,7 +9,6 @@
 #include <QMessageBox>
 #include <QLabel>
 #include <QToolButton>
-#include <QDebug>
 
 using namespace editor;
 
@@ -17,7 +16,7 @@ main_window::main_window(QWidget *parent) : QWidget(parent) {
 	setWindowTitle("color editor");
 	
 	model = new editor_model;
-	base = new image::image_base(model);
+	renderer = new image::model_renderer(model);
 	mode_button_group = new QButtonGroup(this);
 	
 	auto hline = new QLabel;
@@ -56,7 +55,7 @@ static QToolButton *tool_button_text(const QString &text) {
 
 void main_window::setup_image_panel(QVBoxLayout *panel_layout) {
 	view = new image::image_view;
-	view->scene()->addItem(base);
+	view->scene()->addItem(renderer);
 	
 	auto pan_cb = new QCheckBox("Pan");
 	mode_button_group->addButton(pan_cb, mouse_mode::pan);
@@ -166,7 +165,7 @@ void main_window::reapply_effect() {
 
 void main_window::update_image(const QImage &image) {
 	select::selector::update_image(image);
-	base->model = model;
+	renderer->model = model;
 	view->reset_view_rect(image.rect());
 }
 

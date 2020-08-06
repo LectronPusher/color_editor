@@ -1,16 +1,16 @@
-#include "image_base.hpp"
+#include "model_renderer.hpp"
 
 #include <QGraphicsScene>
 
 using namespace editor::image;
 
-image_base::image_base(editor_model *model) : model(model) {}
+model_renderer::model_renderer(editor_model *model) : model(model) {}
 
-QRectF image_base::boundingRect() const {
+QRectF model_renderer::boundingRect() const {
 	return model->image_rect();
 }
 
-void image_base::paint(QPainter *painter, const QStyleOptionGraphicsItem *,
+void model_renderer::paint(QPainter *painter, const QStyleOptionGraphicsItem *,
 					   QWidget *) {
 	painter->drawImage(model->image_rect(), model->source_image());
 	model->draw_mask(painter, scene()->backgroundBrush());

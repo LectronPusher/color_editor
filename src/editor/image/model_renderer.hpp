@@ -9,16 +9,16 @@
 namespace editor{
 namespace image {
 
-class image_base : public QGraphicsItem {
+class model_renderer : public QGraphicsItem {
 public:
-	image_base(editor_model *model);
+	model_renderer(editor_model *model);
 	
 	QRectF boundingRect() const override;
 	void paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
 			   QWidget *widget) override;
 	editor_model *model;
 	
-}; // image_base
+}; // model_renderer
 
 } // image
 } // editor
