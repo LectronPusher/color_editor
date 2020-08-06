@@ -13,8 +13,9 @@ class editor_model : public QObject {
 	Q_OBJECT
 	
 public:
-	enum painting_mode {over, replace};
-	const static painting_mode default_mode = over;
+	enum painting_mode {replace, over};
+	const static painting_mode default_mode = replace;
+	
 	enum select_type {select, exclude, remove, clear};
 	struct select_region { select_type s_type; QRegion region; };
 	

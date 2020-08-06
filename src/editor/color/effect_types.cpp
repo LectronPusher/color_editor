@@ -10,26 +10,60 @@
 
 using namespace editor::color::effect_types;
 
-// solid_color
-solid_color::solid_color() : effect("Solid Color") {
-	changeable_color = new color_label(Qt::red);
+// single_color
+single_color::single_color() : effect("Single Color") {
+	stored_color = new color_label(Qt::red);
+	stored_color->enable_transparency();
+	auto slider = new QSlider(Qt::Horizontal);
+	slider->setMinimum(0);
+	slider->setMaximum(255);
+	auto spinbox = new QSpinBox;
+	spinbox->setRange(0, 255);
+	paint_mode_box = new QComboBox;
+	paint_mode_box->addItem("Layer Over", editor_model::over);
+	paint_mode_box->addItem("Replace", editor_model::replace);
 	
-	connect(changeable_color, &color_label::color_changed,
+	connect(stored_color, &color_label::color_changed, this, &effect::altered);
+	connect(slider, &QSlider::valueChanged,
+			this, &single_color::set_label_transparency);
+	connect(slider, &QSlider::valueChanged, spinbox, &QSpinBox::setValue);
+	connect(spinbox, QOverload<int>::of(&QSpinBox::valueChanged),
+			slider, &QSlider::setValue);
+	connect(paint_mode_box, QOverload<int>::of(&QComboBox::currentIndexChanged),
 			this, &effect::altered);
+	
+	slider->setValue(255);
 	
 	auto hbox = new QHBoxLayout;
 	hbox->addWidget(new QLabel("Color:"));
-	hbox->addWidget(changeable_color);
+	hbox->addWidget(stored_color);
 	options->addLayout(hbox);
+	hbox = new QHBoxLayout;
+	hbox->addWidget(new QLabel("Opacity:"));
+	hbox->addWidget(spinbox);
+	spinbox->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
+	options->addLayout(hbox);
+	options->addWidget(slider);
+	options->addWidget(paint_mode_box);
 	options->addStretch(1);
 }
 
-QImage solid_color::create_mask(editor_model *model) {
+void single_color::set_label_transparency(int value) {
+	QColor color = stored_color->color();
+	color.setAlpha(value);
+	stored_color->set_color(color);
+}
+
+QImage single_color::create_mask(editor_model *model) {
 	QImage img(model->region_rect().size(), QImage::Format_ARGB32);
-	img.fill(changeable_color->color());
+	img.fill(stored_color->color());
 	return img;
 }
-// end solid_color
+
+editor::editor_model::painting_mode single_color::paint_mode() {
+	return paint_mode_box->currentData().value<editor_model::painting_mode>();
+}
+// end single_color
 
 
 // gradient
@@ -96,62 +130,6 @@ QGradient gradient::create_gradient(const QSize &size) {
 // end gradient
 
 
-// transparent
-transparent::transparent() : effect("Transparent Color") {
-	trans_label = new color_label(Qt::red);
-	trans_label->enable_transparency();
-	auto slider = new QSlider(Qt::Horizontal);
-	slider->setMinimum(0);
-	slider->setMaximum(255);
-	auto spinbox = new QSpinBox;
-	spinbox->setRange(0, 255);
-	override_box = new QComboBox;
-	override_box->addItem("Layer Over", editor_model::over);
-	override_box->addItem("Replace", editor_model::replace);
-	
-	connect(trans_label, &color_label::color_changed, this, &effect::altered);
-	connect(slider, &QSlider::valueChanged,
-			this, &transparent::set_label_transparency);
-	connect(slider, &QSlider::valueChanged, spinbox, &QSpinBox::setValue);
-	connect(spinbox, QOverload<int>::of(&QSpinBox::valueChanged),
-			slider, &QSlider::setValue);
-	connect(override_box, QOverload<int>::of(&QComboBox::currentIndexChanged),
-			this, &effect::altered);
-	
-	slider->setValue(80);
-	
-	auto hbox = new QHBoxLayout;
-	hbox->addWidget(new QLabel("Color:"));
-	hbox->addWidget(trans_label);
-	options->addLayout(hbox);
-	hbox = new QHBoxLayout;
-	hbox->addWidget(new QLabel("Opacity:"));
-	hbox->addWidget(spinbox);
-	spinbox->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
-	options->addLayout(hbox);
-	options->addWidget(slider);
-	options->addWidget(override_box);
-	options->addStretch(1);
-}
-
-void transparent::set_label_transparency(int value) {
-	QColor color = trans_label->color();
-	color.setAlpha(value);
-	trans_label->set_color(color);
-}
-
-QImage transparent::create_mask(editor_model *model) {
-	QImage img(model->region_rect().size(), QImage::Format_ARGB32);
-	img.fill(trans_label->color());
-	return img;
-}
-
-editor::editor_model::painting_mode transparent::paint_mode() {
-	return override_box->currentData().value<editor_model::painting_mode>();
-}
-// end transparent
-
-
 // pixellate
 pixellate::pixellate() : effect("Pixellate") {
 	pixel_size = new QSpinBox;
@@ -169,14 +147,6 @@ pixellate::pixellate() : effect("Pixellate") {
 	options->addStretch(1);
 }
 
-editor::editor_model::painting_mode pixellate::paint_mode() {
-	return editor_model::replace;
-}
-
-int under_half(int i) {
-	return (i % 2 == 0) ? (i - 1) / 2 : i / 2;
-}
-
 QImage pixellate::create_mask(editor_model *model) {
 	const QRect &rect = model->region_rect();
 	if (rect.isEmpty())
@@ -190,6 +160,10 @@ QImage pixellate::create_mask(editor_model *model) {
 	painter.setCompositionMode(QPainter::CompositionMode_Source);
 	pixellate_image(&painter, source);
 	return pixellated;
+}
+
+static int under_half(int i) {
+	return (i % 2 == 0) ? (i - 1) / 2 : i / 2;
 }
 
 void pixellate::pixellate_image(QPainter *painter, const QImage &source) {

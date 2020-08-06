@@ -142,14 +142,18 @@ color_match::color_match() : selector("Match Colors") {
 }
 
 void color_match::point_selected(const QPoint &point) {
-	if (choose_color_cb->isChecked())
-		if (image.rect().contains(point))
-			source_color->set_color(image.pixelColor(point));
+	if (choose_color_cb->isChecked()) {
+		if (image.rect().contains(point)) {
+			QColor color;
+			color.setRgba(image.pixel(point));
+			source_color->set_color(color);
+		}
+	}
 }
 
 QRegion color_match::matching_pixels() {
 	int fuzzy = fuzziness->value();
-	QRgb source = source_color->color().rgb();
+	QRgb source = source_color->color().rgba();
 	
 	QRegion region;
 	if (fuzzy == 100)

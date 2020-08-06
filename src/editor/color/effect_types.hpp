@@ -12,17 +12,22 @@ namespace editor {
 namespace color {
 namespace effect_types {
 
-class solid_color : public effect {
+class single_color : public effect {
 	Q_OBJECT
 	
 public:
-	solid_color();
+	single_color();
+	editor_model::painting_mode paint_mode() override;
 	QImage create_mask(editor_model *model) override;
 	
-private:
-	color_label *changeable_color;
+private slots:
+	void set_label_transparency(int value);
 	
-}; // solid_color
+private:
+	color_label *stored_color;
+	QComboBox *paint_mode_box;
+	
+}; // single_color
 
 
 class gradient : public effect {
@@ -45,24 +50,6 @@ private:
 }; // gradient
 
 
-class transparent : public effect {
-	Q_OBJECT
-	
-public:
-	transparent();
-	editor_model::painting_mode paint_mode() override;
-	QImage create_mask(editor_model *model) override;
-	
-private slots:
-	void set_label_transparency(int value);
-	
-private:
-	color_label *trans_label;
-	QComboBox *override_box;
-	
-}; // transparent
-
-
 class pixellate : public effect {
 	Q_OBJECT
 	
@@ -73,7 +60,6 @@ public:
 private:
 	QSpinBox *pixel_size;
 	
-	editor_model::painting_mode paint_mode() override;
 	void pixellate_image(QPainter *painter, const QImage &source);
 	
 	QRect create_rect(const QPoint &point);
