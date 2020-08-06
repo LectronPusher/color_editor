@@ -2,8 +2,7 @@
 
 #include <QGraphicsScene>
 
-namespace editor{
-namespace image {
+using namespace editor::image;
 
 image_base::image_base(editor_model *model) : model(model) {}
 
@@ -16,6 +15,3 @@ void image_base::paint(QPainter *painter, const QStyleOptionGraphicsItem *,
 	painter->drawImage(model->image_rect(), model->source_image());
 	model->draw_mask(painter, scene()->backgroundBrush());
 }
-
-} // image
-} // editor

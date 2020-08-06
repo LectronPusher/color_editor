@@ -8,9 +8,7 @@
 #include <QSpinBox>
 #include <QPainter>
 
-namespace editor {
-namespace color {
-namespace effect_types {
+using namespace editor::color::effect_types;
 
 // solid_color
 solid_color::solid_color() : effect("Solid Color") {
@@ -148,7 +146,7 @@ QImage transparent::create_mask(editor_model *model) {
 	return img;
 }
 
-editor_model::painting_mode transparent::paint_mode() {
+editor::editor_model::painting_mode transparent::paint_mode() {
 	return override_box->currentData().value<editor_model::painting_mode>();
 }
 // end transparent
@@ -171,7 +169,7 @@ pixellate::pixellate() : effect("Pixellate") {
 	options->addStretch(1);
 }
 
-editor_model::painting_mode pixellate::paint_mode() {
+editor::editor_model::painting_mode pixellate::paint_mode() {
 	return editor_model::replace;
 }
 
@@ -232,7 +230,3 @@ QRect pixellate::create_rect(const QPoint &point) {
 	return {point - QPoint(h, h), QSize(s, s)};
 }
 // end pixellate
-
-} // effect_types
-} // color
-} // editor

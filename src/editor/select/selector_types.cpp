@@ -10,9 +10,7 @@
 
 Q_DECLARE_METATYPE(QRegion::RegionType);
 
-namespace editor {
-namespace select {
-namespace selector_types {
+using namespace editor::select::selector_types;
 
 static QToolButton *tool_button_text(const QString &text) {
 	auto button = new QToolButton;
@@ -178,7 +176,3 @@ void color_match::showEvent(QShowEvent *) {
 	choose_color_cb->setChecked(true);
 }
 // end color_match
-
-} // selector_types
-} // select
-} // editor

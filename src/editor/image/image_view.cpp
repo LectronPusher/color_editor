@@ -1,8 +1,7 @@
 #include "image_view.hpp"
 #include "circle_cursor.hpp"
 
-namespace editor{
-namespace image {
+using namespace editor::image;
 
 image_view::image_view(QWidget *parent)
 : QGraphicsView(parent) {
@@ -114,6 +113,3 @@ QPoint image_view::scene_point(const QPoint &view_point) {
 	// QPointF::toPoint() rounds to the nearest value, I'd rather always round down
 	return {(int)pf.x(), (int)pf.y()};
 }
-
-} // image
-} // editor

@@ -11,7 +11,7 @@
 #include <QToolButton>
 #include <QDebug>
 
-namespace editor {
+using namespace editor;
 
 main_window::main_window(QWidget *parent) : QWidget(parent) {
 	setWindowTitle("color editor");
@@ -252,5 +252,3 @@ void main_window::keyPressEvent(QKeyEvent *event) {
 			break;
 	}
 }
-
-} // editor

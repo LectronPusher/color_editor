@@ -1,7 +1,6 @@
 #include "selector.hpp"
 
-namespace editor {
-namespace select {
+using namespace editor::select;
 
 QImage selector::image;
 QSet<QRgb> selector::color_table;
@@ -30,6 +29,3 @@ void selector::update_color_table() {
 	}
 	color_table.squeeze();
 }
-
-} // select
-} // editor

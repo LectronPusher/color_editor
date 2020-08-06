@@ -2,7 +2,7 @@
 
 #include <QDebug>
 
-namespace editor {
+using namespace editor;
 
 const QImage editor_model::source_image() {
 	return image;
@@ -208,5 +208,3 @@ editor_model::region_change::~region_change() {
 		added_region.~QRegion();
 }
 // end region_change
-
-} // editor

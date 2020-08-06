@@ -3,8 +3,7 @@
 #include <QVBoxLayout>
 #include <QColorDialog>
 
-namespace editor {
-namespace color {
+using namespace editor::color;
 
 color_label::color_label(QColor starting_color, QWidget *parent)
 : QFrame(parent), fill_color(starting_color) {
@@ -68,6 +67,3 @@ void color_label::open_dialog() {
 	
 	dialog->show();
 }
-
-} // color
-} // editor
