@@ -93,7 +93,7 @@ void main_window::setup_image_panel(QVBoxLayout *panel_layout) {
 }
 
 void main_window::setup_select_panel(QVBoxLayout *panel_layout) {
-	selector_stack = new widget_stack<select::selector>;
+	selector_stack = new widget_stack<select::selector *>;
 	selector_stack->add(new select::selector_types::select_all);
 	selector_stack->add(new select::selector_types::draw);
 	selector_stack->add(new select::selector_types::color_match);
@@ -111,7 +111,7 @@ void main_window::setup_select_panel(QVBoxLayout *panel_layout) {
 }
 
 void main_window::setup_color_panel(QVBoxLayout *panel_layout) {
-	effect_stack = new widget_stack<color::effect>;
+	effect_stack = new widget_stack<color::effect *>;
 	effect_stack->add(new color::effect_types::transparent);
 // 	effect_stack->add(new color::effect_types::solid_color);
 	effect_stack->add(new color::effect_types::gradient);
@@ -138,8 +138,7 @@ void main_window::make_major_connections() {
 	connect(view, &image::image_view::combine_points,
 			model, &editor_model::combine_recent_changes);
 	// selector
-	for (int i = 0; i < selector_stack->count(); ++i) {
-		select::selector *sel = selector_stack->at(i);
+	for (auto sel : *selector_stack) {
 		sel->add_checkboxes_to_group(mode_button_group);
 		connect(sel, &select::selector::region_selected,
 				this, &main_window::region_selected);
@@ -149,8 +148,8 @@ void main_window::make_major_connections() {
 	// effect
 	connect(model, &editor_model::region_boundary_updated,
 			this, &main_window::reapply_effect);
-	for (int i = 0; i < effect_stack->count(); ++i) {
-		connect(effect_stack->at(i), &color::effect::altered,
+	for (auto effect : *effect_stack) {
+		connect(effect, &color::effect::altered,
 				this, &main_window::reapply_effect);
 	}
 }

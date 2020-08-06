@@ -9,7 +9,7 @@ namespace editor {
 // a convenience class for a QStackedWidget with a QComboBox above it
 // requires that T has public name() function and inherits from QWidget
 // the value of name() is the identifier given to the combo box
-// you can loop through all items in the stack by using count() and at(index)
+// supports range based for loops with widget_stack<T>::Iterator
 template <typename T>
 class widget_stack : public QWidget {
 public:
@@ -29,24 +29,57 @@ public:
 	}
 	
 	// add a new T to the stack and the box
-	void add(T *new_item) {
+	void add(T new_item) {
 		stack->addWidget(new_item);
 		box->addItem(new_item->name());
 	}
 	
 	// return the active item
-	T *active() {
-		return qobject_cast<T *>(stack->currentWidget());
+	T active() const {
+		return qobject_cast<T>(stack->currentWidget());
 	}
 	
 	// return the item at index
-	T *at(int index) {
-		return qobject_cast<T *>(stack->widget(index));
+	T at(int index) const {
+		return qobject_cast<T>(stack->widget(index));
 	}
 	
 	// return the number of items in the widget_stack
-	int count() {
+	int size() const {
 		return stack->count();
+	}
+	
+	// support range based for loops
+	class Iterator {
+	public:
+		Iterator(const widget_stack<T> *parent_in, int position_in)
+		: parent(parent_in), position(position_in) {}
+		
+		T operator*() const {
+			return parent->at(position);
+		}
+		Iterator &operator++() {
+			++position;
+			return *this;
+		}
+		bool operator==(const Iterator &rhs) const {
+			return parent == rhs.parent && position == rhs.position;
+		}
+		bool operator!=(const Iterator &rhs) const {
+			return !(*this == rhs);
+		}
+		
+	private:
+		const widget_stack<T> *parent;
+		int position;
+	}; // Iterator
+	
+	Iterator begin() const {
+		return Iterator(this, 0);
+	}
+	
+	Iterator end() const {
+		return Iterator(this, size());
 	}
 	
 private:

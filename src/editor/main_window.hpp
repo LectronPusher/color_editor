@@ -46,11 +46,11 @@ private:
 	// item stored inside view, handles rendering the image
 	image::image_base *base;
 	// stores the available selectors and their algorithms
-	widget_stack<select::selector> *selector_stack;
+	widget_stack<select::selector *> *selector_stack;
 	// checkbox for selector option
 	QCheckBox *remove_selection;
 	// stores the available color effects and their algorithms
-	widget_stack<color::effect> *effect_stack;
+	widget_stack<color::effect *> *effect_stack;
 	// which file was previously open, starts at the home directory
 	QFileInfo previous_file = QDir::homePath();
 	
