@@ -3,9 +3,8 @@
 #include "../editor_model.hpp"
 
 #include <QWidget>
-#include <QImage>
+#include <QButtonGroup>
 #include <QVBoxLayout>
-#include <QRegion>
 #include <QSet>
 
 namespace editor {
@@ -17,10 +16,12 @@ class selector : public QWidget {
 public:
 	selector(QString name_in);
 	const QString name() const;
+	virtual void add_checkboxes_to_group(QButtonGroup *) {}
+	
 	static void update_image(const QImage &new_image);
 	
 public slots:
-	virtual void point_selected(const QPoint &point);
+	virtual void point_selected(const QPoint &) {}
 	
 signals:
 	void region_selected(editor_model::select_region region);
@@ -30,10 +31,10 @@ protected:
 	static QImage image;
 	static QSet<QRgb> color_table;
 	
-	static void update_color_table();
-	
 private:
 	const QString selector_name;
+	
+	static void update_color_table();
 	
 }; // selector
 

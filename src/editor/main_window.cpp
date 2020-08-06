@@ -1,6 +1,6 @@
 #include "main_window.hpp"
-#include "select/selector_types.hpp"
 #include "color/effect_types.hpp"
+#include "select/selector_types.hpp"
 #include "mouse_mode.hpp"
 
 #include <QGridLayout>
@@ -17,6 +17,8 @@ main_window::main_window(QWidget *parent) : QWidget(parent) {
 	setWindowTitle("color editor");
 	
 	model = new editor_model;
+	base = new image::image_base(model);
+	mode_button_group = new QButtonGroup(this);
 	
 	auto hline = new QLabel;
 	hline->setFrameStyle(QFrame::HLine);
@@ -46,17 +48,18 @@ main_window::main_window(QWidget *parent) : QWidget(parent) {
 	open_image("../data/mantis300.jpg");
 }
 
-QToolButton *tool_button_text(const QString &text) {
-	auto button= new QToolButton;
+static QToolButton *tool_button_text(const QString &text) {
+	auto button = new QToolButton;
 	button->setText(text);
 	return button;
 }
 
 void main_window::setup_image_panel(QVBoxLayout *panel_layout) {
 	view = new image::image_view;
-	mouse_mode::set_view(view);
-	base = new image::image_base(model);
 	view->scene()->addItem(base);
+	
+	auto pan_cb = new QCheckBox("Pan");
+	mode_button_group->addButton(pan_cb, mouse_mode::pan);
 	
 	auto open_b = tool_button_text("Open");
 	auto save_as_b = tool_button_text("Save As");
@@ -82,7 +85,7 @@ void main_window::setup_image_panel(QVBoxLayout *panel_layout) {
 	image_buttons->addWidget(zoom_in_b);
 	image_buttons->addWidget(zoom_out_b);
 	image_buttons->addWidget(reset_zoom_b);
-	image_buttons->addWidget(new mouse_mode(mouse_mode::pan, "Pan"));
+	image_buttons->addWidget(pan_cb);
 	
 	panel_layout->addLayout(image_buttons);
 	panel_layout->setAlignment(image_buttons, Qt::AlignLeft);
@@ -123,14 +126,21 @@ void main_window::setup_color_panel(QVBoxLayout *panel_layout) {
 }
 
 void main_window::make_major_connections() {
-	// view
-	connect(model, &editor_model::contents_updated,
-			view, &image::image_view::redraw_rect);
+	// this
 	connect(model, &editor_model::image_changed,
 			this, &main_window::update_image);
+	// view
+	connect(mode_button_group, &QButtonGroup::idToggled, this, [=](int id, bool ch){
+		if (ch) view->set_mouse_mode(static_cast<mouse_mode::mode>(id));
+	});
+	connect(model, &editor_model::contents_updated,
+			view, &image::image_view::redraw_rect);
+	connect(view, &image::image_view::combine_points,
+			model, &editor_model::combine_recent_changes);
 	// selector
 	for (int i = 0; i < selector_stack->count(); ++i) {
 		select::selector *sel = selector_stack->at(i);
+		sel->add_checkboxes_to_group(mode_button_group);
 		connect(sel, &select::selector::region_selected,
 				this, &main_window::region_selected);
 		connect(view, &image::image_view::point_selected,
@@ -159,7 +169,7 @@ void main_window::reapply_effect() {
 void main_window::update_image(const QImage &image) {
 	select::selector::update_image(image);
 	base->model = model;
-	view->reset_view_rect(model->image_rect());
+	view->reset_view_rect(image.rect());
 }
 
 void main_window::open_image(QString filepath) {

@@ -1,6 +1,7 @@
 #include "selector_types.hpp"
 
 #include "ColorUtils.hpp"
+#include "../mouse_mode.hpp"
 
 #include <QHBoxLayout>
 #include <QToolButton>
@@ -13,12 +14,16 @@ namespace editor {
 namespace select {
 namespace selector_types {
 
+static QToolButton *tool_button_text(const QString &text) {
+	auto button = new QToolButton;
+	button->setText(text);
+	return button;
+}
+
 // select_all
 select_all::select_all() : selector("Select All") {
-	auto exclude_b = new QToolButton;
-	exclude_b->setText("Exclude");
-	auto select_b = new QToolButton;
-	select_b->setText("Select");
+	auto exclude_b = tool_button_text("Exclude");
+	auto select_b = tool_button_text("Select");
 	
 	connect(exclude_b, &QToolButton::clicked, this, [=](){
 		emit selector::region_selected({editor_model::exclude, image.rect()});
@@ -44,9 +49,14 @@ draw::draw() : selector("Draw") {
 	region_type = new QComboBox;
 	region_type->addItem("Circle", QRegion::Ellipse);
 	region_type->addItem("Square", QRegion::Rectangle);
+	exclude_cb = new QCheckBox("Exclude");
+	select_cb = new QCheckBox("Select");
+	auto group = new QButtonGroup(this);
+	group->addButton(exclude_cb);
+	group->addButton(select_cb);
 	
-	exclude_mm = new mouse_mode(mouse_mode::combined_points, "Exclude");
-	select_mm = new mouse_mode(mouse_mode::combined_points, "Select");
+	connect(exclude_cb, &QCheckBox::stateChanged, this, &draw::set_last_checkbox);
+	connect(select_cb, &QCheckBox::stateChanged, this, &draw::set_last_checkbox);
 	
 	auto hbox = new QHBoxLayout;
 	hbox->addWidget(new QLabel("Size:"));
@@ -55,14 +65,14 @@ draw::draw() : selector("Draw") {
 	options->addLayout(hbox);
 	options->addWidget(region_type);
 	hbox = new QHBoxLayout;
-	hbox->addWidget(exclude_mm);
-	hbox->addWidget(select_mm);
+	hbox->addWidget(exclude_cb);
+	hbox->addWidget(select_cb);
 	options->addLayout(hbox);
 	options->addStretch(1);
 }
 
 void draw::point_selected(const QPoint &point) {
-	if (!exclude_mm->isChecked() && !select_mm->isChecked())
+	if (!exclude_cb->isChecked() && !select_cb->isChecked())
 		return;
 	
 	QRect rect = create_rect(point);
@@ -70,7 +80,7 @@ void draw::point_selected(const QPoint &point) {
 	QRegion new_region(rect, r_type);
 	new_region = new_region.intersected(image.rect());
 	
-	if (exclude_mm->isChecked())
+	if (exclude_cb->isChecked())
 		emit selector::region_selected({editor_model::exclude, new_region});
 	else
 		emit selector::region_selected({editor_model::select, new_region});
@@ -78,24 +88,38 @@ void draw::point_selected(const QPoint &point) {
 
 QRect draw::create_rect(const QPoint &point) {
 	int s = side_length->value();
+	// make point center if odd, top left of central square if even
 	int b = (s % 2 == 0) ? (s - 1) /2 : s / 2;
 	return {point - QPoint(b, b), QSize(s, s)};
+}
+
+void draw::add_checkboxes_to_group(QButtonGroup *group) {
+	group->addButton(exclude_cb, mouse_mode::combined_points);
+	group->addButton(select_cb, mouse_mode::combined_points);
+}
+
+void draw::set_last_checkbox(int state) {
+	if (state == Qt::Checked)
+		last_checkbox = qobject_cast<QCheckBox *>(sender());
+}
+
+void draw::showEvent(QShowEvent *) {
+	if (last_checkbox != nullptr)
+		last_checkbox->setChecked(true);
 }
 // end draw
 
 
 // color_match
 color_match::color_match() : selector("Match Colors") {
-	auto exclude_b = new QToolButton;
-	exclude_b->setText("Exclude");
-	auto select_b = new QToolButton;
-	select_b->setText("Select");
 	source_color = new color::color_label;
-	choose_color = new mouse_mode(mouse_mode::single_point, "Choose Color");
+	choose_color_cb = new QCheckBox("Choose Color");
 	fuzziness = new QSpinBox;
 	fuzziness->setRange(0, 100);
 	fuzziness->setValue(10);
 	fuzziness->setSuffix("%");
+	auto exclude_b = tool_button_text("Exclude");
+	auto select_b = tool_button_text("Select");
 	
 	connect(exclude_b, &QToolButton::clicked, this, [=](){
 		emit selector::region_selected({editor_model::exclude, matching_pixels()});
@@ -105,7 +129,7 @@ color_match::color_match() : selector("Match Colors") {
 	});
 	
 	auto hbox = new QHBoxLayout;
-	hbox->addWidget(choose_color);
+	hbox->addWidget(choose_color_cb);
 	hbox->addWidget(source_color);
 	options->addLayout(hbox);
 	hbox = new QHBoxLayout;
@@ -120,7 +144,7 @@ color_match::color_match() : selector("Match Colors") {
 }
 
 void color_match::point_selected(const QPoint &point) {
-	if (choose_color->isChecked())
+	if (choose_color_cb->isChecked())
 		if (image.rect().contains(point))
 			source_color->set_color(image.pixelColor(point));
 }
@@ -144,6 +168,14 @@ QRegion color_match::matching_pixels() {
 QBitmap color_match::matching_bitmap(const QRgb &rgb) {
 	QImage mask = image.createMaskFromColor(rgb, Qt::MaskOutColor);
 	return QBitmap::fromImage(mask);
+}
+
+void color_match::add_checkboxes_to_group(QButtonGroup *group) {
+	group->addButton(choose_color_cb, mouse_mode::single_point);
+}
+
+void color_match::showEvent(QShowEvent *) {
+	choose_color_cb->setChecked(true);
 }
 // end color_match
 
