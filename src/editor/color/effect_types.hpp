@@ -17,7 +17,7 @@ class single_color : public effect {
 	
 public:
 	single_color();
-	editor_model::painting_mode paint_mode() override;
+	painting_mode::mode paint_mode() override;
 	QImage create_mask(editor_model *model) override;
 	
 private slots:
@@ -45,7 +45,7 @@ private:
 	color_label *color_1;
 	color_label *color_2;
 	
-	QGradient create_gradient(const QSize &size);
+	QGradient create_gradient(const QRect &rect);
 	
 }; // gradient
 

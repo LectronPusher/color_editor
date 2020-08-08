@@ -11,8 +11,8 @@ const QString effect::name()  const {
 	return effect_name;
 }
 
-editor::editor_model::painting_mode effect::paint_mode() {
-	return editor_model::default_mode;
+editor::painting_mode::mode effect::paint_mode() {
+	return painting_mode::default_mode;
 }
 
 void effect::showEvent(QShowEvent *event) {

@@ -12,6 +12,7 @@ QRectF model_renderer::boundingRect() const {
 
 void model_renderer::paint(QPainter *painter, const QStyleOptionGraphicsItem *,
 					   QWidget *) {
+	painter->setBackground(scene()->backgroundBrush());
 	painter->drawImage(model->image_rect(), model->source_image());
-	model->draw_mask(painter, scene()->backgroundBrush());
+	model->draw_mask(painter, true);
 }

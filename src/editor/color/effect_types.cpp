@@ -8,6 +8,8 @@
 #include <QSpinBox>
 #include <QPainter>
 
+Q_DECLARE_METATYPE(editor::painting_mode::mode);
+
 using namespace editor::color::effect_types;
 
 // single_color
@@ -20,8 +22,8 @@ single_color::single_color() : effect("Single Color") {
 	auto spinbox = new QSpinBox;
 	spinbox->setRange(0, 255);
 	paint_mode_box = new QComboBox;
-	paint_mode_box->addItem("Layer Over", editor_model::over);
-	paint_mode_box->addItem("Replace", editor_model::replace);
+	paint_mode_box->addItem("Layer Over", painting_mode::over);
+	paint_mode_box->addItem("Replace", painting_mode::replace);
 	
 	connect(stored_color, &color_label::color_changed, this, &effect::altered);
 	connect(slider, &QSlider::valueChanged,
@@ -55,13 +57,13 @@ void single_color::set_label_transparency(int value) {
 }
 
 QImage single_color::create_mask(editor_model *model) {
-	QImage img(model->region_rect().size(), QImage::Format_ARGB32);
-	img.fill(stored_color->color());
-	return img;
+	QImage mask(model->image_rect().size(), QImage::Format_ARGB32);
+	mask.fill(stored_color->color());
+	return mask;
 }
 
-editor::editor_model::painting_mode single_color::paint_mode() {
-	return paint_mode_box->currentData().value<editor_model::painting_mode>();
+editor::painting_mode::mode single_color::paint_mode() {
+	return paint_mode_box->currentData().value<painting_mode::mode>();
 }
 // end single_color
 
@@ -97,14 +99,10 @@ gradient::gradient() : effect("Gradient") {
 }
 
 QImage gradient::create_mask(editor_model *model) {
-	QSize size = model->region_rect().size();
-	QImage img(size, QImage::Format_ARGB32);
-	QGradient gradient = create_gradient(size);
-	
-	QPainter painter(&img);
-	painter.fillRect(QRect(QPoint(0, 0), size), gradient);
-	
-	return img;
+	QImage mask(model->image_rect().size(), QImage::Format_ARGB32);
+	QPainter painter(&mask);
+	painter.fillRect(model->image_rect(), create_gradient(model->region_rect()));
+	return mask;
 }
 
 void gradient::swap_colors() {
@@ -113,17 +111,17 @@ void gradient::swap_colors() {
 	color_2->set_color(temp);
 }
 
-QGradient gradient::create_gradient(const QSize &size) {
+QGradient gradient::create_gradient(const QRect &rect) {
 	QLinearGradient grad;
 	grad.setColorAt(0, color_1->color());
 	grad.setColorAt(1, color_2->color());
-	grad.setStart(0, 0);
+	grad.setStart(rect.left(), rect.top());
 	
 	bool horizontal = orient_box->currentData().value<bool>();
 	if (horizontal)
-		grad.setFinalStop(size.width(), 0);
+		grad.setFinalStop(rect.right(), rect.top());
 	else
-		grad.setFinalStop(0, size.height());
+		grad.setFinalStop(rect.left(), rect.bottom());
 	
 	return grad;
 }
@@ -148,18 +146,14 @@ pixellate::pixellate() : effect("Pixellate") {
 }
 
 QImage pixellate::create_mask(editor_model *model) {
-	const QRect &rect = model->region_rect();
-	if (rect.isEmpty())
-		return QImage();
-	QImage source = model->source_image().copy(rect);
 	if (pixel_size->value() == 1)
-		return source;
+		return model->source_image();
 	
-	QImage pixellated = source;
-	QPainter painter(&pixellated);
+	QImage mask(model->image_rect().size(), QImage::Format_ARGB32);
+	QPainter painter(&mask);
 	painter.setCompositionMode(QPainter::CompositionMode_Source);
-	pixellate_image(&painter, source);
-	return pixellated;
+	pixellate_image(&painter, model->source_image());
+	return mask;
 }
 
 static int under_half(int i) {

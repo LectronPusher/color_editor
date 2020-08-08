@@ -1,5 +1,6 @@
 #pragma once
 
+#include "../painting_mode.hpp"
 #include "../editor_model.hpp"
 
 #include <QWidget>
@@ -14,7 +15,7 @@ class effect : public QWidget {
 public:
 	effect(QString name_in);
 	const QString name() const;
-	virtual editor_model::painting_mode paint_mode();
+	virtual painting_mode::mode paint_mode();
 	virtual QImage create_mask(editor_model *model) = 0;
 	
 signals:

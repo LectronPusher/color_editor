@@ -31,9 +31,16 @@ void color_label::enable_transparency() {
 void color_label::set_color(const QColor &new_color) {
 	if (new_color.isValid() && fill_color != new_color) {
 		fill_color = new_color;
+		if (!can_be_transparent)
+			fill_color.setAlpha(255);
 		QWidget::update();
-		emit color_changed(new_color);
+		emit color_changed(fill_color);
 	}
+}
+
+void color_label::set_alpha(int value) {
+	if (can_be_transparent)
+		fill_color.setAlpha(value);
 }
 
 void color_label::paintEvent(QPaintEvent *event) {

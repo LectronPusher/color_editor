@@ -20,6 +20,7 @@ public:
 	
 public slots:
 	void set_color(const QColor &new_color);
+	void set_alpha(int value);
 	
 signals:
 	void color_changed(const QColor &new_color);

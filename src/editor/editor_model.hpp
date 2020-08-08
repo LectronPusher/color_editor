@@ -1,5 +1,7 @@
 #pragma once
 
+#include "painting_mode.hpp"
+
 #include <QObject>
 #include <QImage>
 #include <QRegion>
@@ -13,9 +15,6 @@ class editor_model : public QObject {
 	Q_OBJECT
 	
 public:
-	enum painting_mode {replace, over};
-	const static painting_mode default_mode = replace;
-	
 	enum select_type {select, exclude, remove, clear};
 	
 private:
@@ -45,9 +44,9 @@ public:
 public slots:
 	void set_image(const QImage &new_image);
 	
-	void set_mask(const QImage& new_mask, painting_mode new_mode = default_mode);
+	void set_mask(const QImage& new_mask, painting_mode::mode new_mode);
 	void apply_mask();
-	void draw_mask(QPainter *painter, const QBrush &background = Qt::NoBrush);
+	void draw_mask(QPainter *painter, bool use_background);
 	
 	void add_region(const QRegion &region, select_type s_type);
 	void clear_regions();
@@ -64,7 +63,7 @@ private:
 	QImage image;
 	
 	QImage mask;
-	painting_mode mode;
+	painting_mode::mode mode;
 	
 	QRegion selected;
 	QRegion excluded;
@@ -80,5 +79,4 @@ private:
 
 } // editor
 
-Q_DECLARE_METATYPE(editor::editor_model::painting_mode);
 Q_DECLARE_METATYPE(editor::editor_model::select_type);
