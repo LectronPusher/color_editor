@@ -3,46 +3,19 @@
 #include "select/selector_types.hpp"
 #include "mouse_mode.hpp"
 
-#include <QGridLayout>
-#include <QHBoxLayout>
 #include <QFileDialog>
 #include <QMessageBox>
 #include <QLabel>
-#include <QToolButton>
 
 using namespace editor;
 
 main_window::main_window(QWidget *parent) : QWidget(parent) {
 	setWindowTitle("color editor");
 	
-	model = new editor_model;
-	renderer = new image::model_renderer(model);
-	mode_button_group = new QButtonGroup(this);
-	
-	auto hline = new QLabel;
-	hline->setFrameStyle(QFrame::HLine);
-	hline->setFixedHeight(5);
-	hline->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
-	
-	auto image_panel = new QVBoxLayout;
-	setup_image_panel(image_panel);
-	
-	QWidget *tool_panel_wrapper = new QWidget;
-	auto tool_panels = new QVBoxLayout(tool_panel_wrapper);
-	tool_panels->setContentsMargins(0, 0, 0, 0);
-	setup_select_panel(tool_panels);
-	tool_panels->addWidget(hline);
-	setup_color_panel(tool_panels);
-	// requires tool_panel_wrapper, doesn't work without it
-	tool_panels->setSizeConstraint(QLayout::SetFixedSize);
-	
+	initialize_members();
 	make_major_connections();
+	setup_layout();
 	
-	auto all_panels = new QHBoxLayout;
-	all_panels->addLayout(image_panel);
-	all_panels->addWidget(tool_panel_wrapper);
-	all_panels->setAlignment(tool_panel_wrapper, Qt::AlignTop);
-	setLayout(all_panels);
 	// default so I don't have to manually load an image every time
 	open_image("../data/mantis300.jpg");
 }
@@ -53,13 +26,108 @@ static QToolButton *tool_button_text(const QString &text) {
 	return button;
 }
 
-void main_window::setup_image_panel(QVBoxLayout *panel_layout) {
+void main_window::initialize_members() {
+	model = new editor_model;
+	model->setParent(this);
+	renderer = new image::model_renderer(model);
+	
 	view = new image::image_view;
 	view->scene()->addItem(renderer);
 	
-	auto pan_cb = new QCheckBox("Pan");
-	mode_button_group->addButton(pan_cb, mouse_mode::pan);
+	mouse_mode_group = new QButtonGroup(this);
 	
+	selector_stack = new widget_stack<select::selector *>;
+	selector_stack->add(new select::selector_types::select_all);
+	selector_stack->add(new select::selector_types::draw);
+	selector_stack->add(new select::selector_types::color_match);
+	for (auto selector : *selector_stack)
+		selector->add_checkboxes_to_group(mouse_mode_group);
+	
+	effect_stack = new widget_stack<color::effect *>;
+	effect_stack->add(new color::effect_types::single_color);
+	effect_stack->add(new color::effect_types::gradient);
+	effect_stack->add(new color::effect_types::pixellate);
+	
+	apply_b = tool_button_text("Save Effect to Image");
+}
+
+void main_window::make_major_connections() {
+	// this
+	connect(model, &editor_model::image_changed,
+			this, &main_window::set_image);
+	// view
+	connect(model, &editor_model::contents_updated,
+			view, &image::image_view::redraw_rect);
+	connect(view, &image::image_view::combine_points,
+			model, &editor_model::combine_recent_changes);
+	connect(mouse_mode_group, &QButtonGroup::idToggled,
+			this, [=](int id, bool checked){
+				if (checked)
+					view->set_mouse_mode(static_cast<mouse_mode::mode>(id));
+			});
+	// selector
+	for (auto selector : *selector_stack) {
+		connect(selector, &select::selector::region_selected,
+				model, &editor_model::add_region);
+		connect(view, &image::image_view::point_selected,
+				selector, &select::selector::point_selected);
+	}
+	// effect
+	connect(model, &editor_model::region_boundary_updated,
+			this, [=](){ update_effect(); });
+	for (auto effect : *effect_stack) {
+		connect(effect, &color::effect::altered, this, &main_window::update_effect);
+	}
+	// apply_b
+	connect(apply_b, &QToolButton::clicked, model, &editor_model::apply_mask);
+}
+
+void main_window::set_image(const QImage &image) {
+	select::selector::set_image(image);
+	update_effect();
+	renderer->model = model;
+	view->reset_view_rect(image.rect());
+}
+
+void main_window::update_effect() {
+	auto effect = effect_stack->active();
+	model->set_mask(effect->create_mask(model), effect->paint_mode());
+}
+
+static QLabel *horizontal_line() {
+	auto hline = new QLabel;
+	hline->setFrameStyle(QFrame::HLine);
+	hline->setFixedHeight(5);
+	hline->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
+	return hline;
+}
+
+void main_window::setup_layout() {
+	auto image_panel = new QVBoxLayout;
+	QHBoxLayout *image_buttons = create_image_buttons();
+	image_panel->addLayout(image_buttons);
+	image_panel->setAlignment(image_buttons, Qt::AlignLeft);
+	image_panel->addWidget(view);
+	
+	QWidget *tool_panel_wrapper = new QWidget;
+	auto tool_panel = new QVBoxLayout(tool_panel_wrapper);
+	tool_panel->setContentsMargins(0, 0, 0, 0);
+	tool_panel->addWidget(selector_stack);
+	tool_panel->addWidget(horizontal_line());
+	tool_panel->addWidget(effect_stack);
+	tool_panel->addWidget(apply_b);
+	tool_panel->setAlignment(apply_b, Qt::AlignCenter);
+	// requires tool_panel_wrapper, doesn't work without it
+	tool_panel->setSizeConstraint(QLayout::SetFixedSize);
+	
+	auto all_panels = new QHBoxLayout;
+	all_panels->addLayout(image_panel);
+	all_panels->addWidget(tool_panel_wrapper);
+	all_panels->setAlignment(tool_panel_wrapper, Qt::AlignTop);
+	setLayout(all_panels);
+}
+
+QHBoxLayout *main_window::create_image_buttons() {
 	auto open_b = tool_button_text("Open");
 	auto save_as_b = tool_button_text("Save As");
 	auto undo_b = tool_button_text("Undo");
@@ -76,6 +144,9 @@ void main_window::setup_image_panel(QVBoxLayout *panel_layout) {
 	connect(zoom_out_b, &QToolButton::clicked, view, &image::image_view::zoom_out);
 	connect(reset_zoom_b, &QToolButton::clicked, view, &image::image_view::reset_zoom);
 	
+	auto pan_cb = new QCheckBox("Pan");
+	mouse_mode_group->addButton(pan_cb, mouse_mode::pan);
+	
 	auto image_buttons = new QHBoxLayout;
 	image_buttons->addWidget(open_b);
 	image_buttons->addWidget(save_as_b);
@@ -86,87 +157,7 @@ void main_window::setup_image_panel(QVBoxLayout *panel_layout) {
 	image_buttons->addWidget(reset_zoom_b);
 	image_buttons->addWidget(pan_cb);
 	
-	panel_layout->addLayout(image_buttons);
-	panel_layout->setAlignment(image_buttons, Qt::AlignLeft);
-	panel_layout->addWidget(view);
-}
-
-void main_window::setup_select_panel(QVBoxLayout *panel_layout) {
-	selector_stack = new widget_stack<select::selector *>;
-	selector_stack->add(new select::selector_types::select_all);
-	selector_stack->add(new select::selector_types::draw);
-	selector_stack->add(new select::selector_types::color_match);
-	
-	remove_selection = new QCheckBox("Remove From Both");
-	
-	auto clear_b = tool_button_text("Clear Selection");
-	connect(clear_b, &QToolButton::clicked, model, &editor_model::clear_regions);
-	
-	panel_layout->addWidget(selector_stack);
-	panel_layout->addWidget(remove_selection);
-	panel_layout->setAlignment(remove_selection, Qt::AlignCenter);
-	panel_layout->addWidget(clear_b);
-	panel_layout->setAlignment(clear_b, Qt::AlignCenter);
-}
-
-void main_window::setup_color_panel(QVBoxLayout *panel_layout) {
-	effect_stack = new widget_stack<color::effect *>;
-	effect_stack->add(new color::effect_types::single_color);
-	effect_stack->add(new color::effect_types::gradient);
-	effect_stack->add(new color::effect_types::pixellate);
-	
-	auto store_b = tool_button_text("Save Effect to Image");
-	connect(store_b, &QToolButton::clicked, model, &editor_model::apply_mask);
-	
-	panel_layout->addWidget(effect_stack);
-	panel_layout->addWidget(store_b);
-	panel_layout->setAlignment(store_b, Qt::AlignCenter);
-}
-
-void main_window::make_major_connections() {
-	// this
-	connect(model, &editor_model::image_changed,
-			this, &main_window::update_image);
-	// view
-	connect(mode_button_group, &QButtonGroup::idToggled, this, [=](int id, bool ch){
-		if (ch) view->set_mouse_mode(static_cast<mouse_mode::mode>(id));
-	});
-	connect(model, &editor_model::contents_updated,
-			view, &image::image_view::redraw_rect);
-	connect(view, &image::image_view::combine_points,
-			model, &editor_model::combine_recent_changes);
-	// selector
-	for (auto sel : *selector_stack) {
-		sel->add_checkboxes_to_group(mode_button_group);
-		connect(sel, &select::selector::region_selected,
-				this, &main_window::region_selected);
-		connect(view, &image::image_view::point_selected,
-				sel, &select::selector::point_selected);
-	}
-	// effect
-	connect(model, &editor_model::region_boundary_updated,
-			this, &main_window::reapply_effect);
-	for (auto effect : *effect_stack) {
-		connect(effect, &color::effect::altered,
-				this, &main_window::reapply_effect);
-	}
-}
-
-void main_window::region_selected(editor_model::select_region region) {
-	if (remove_selection->isChecked())
-		region.s_type = editor_model::remove;
-	model->add_region(region);
-}
-
-void main_window::reapply_effect() {
-	auto effect = effect_stack->active();
-	model->set_mask(effect->create_mask(model), effect->paint_mode());
-}
-
-void main_window::update_image(const QImage &image) {
-	select::selector::update_image(image);
-	renderer->model = model;
-	view->reset_view_rect(image.rect());
+	return image_buttons;
 }
 
 void main_window::open_image(QString filepath) {
@@ -175,7 +166,7 @@ void main_window::open_image(QString filepath) {
 			filepath = QFileDialog::getOpenFileName(
 				this,
 				"Open Image",
-						   previous_file.dir().path(),
+				previous_file.dir().path(),
 				"Image Files (*.png *.jpg *.bmp)"
 			);
 		}
@@ -193,7 +184,7 @@ void main_window::save_as() {
 		QString filepath = QFileDialog::getSaveFileName(
 			this,
 			"Save As",
-							   previous_file.filePath(),
+			previous_file.filePath(),
 			"Image Files (*.png *.jpg *.bmp);;All Files (*)"
 		);
 		if (!filepath.isEmpty()) {
@@ -202,13 +193,6 @@ void main_window::save_as() {
 			previous_file = QFileInfo(filepath);
 		}
 	}
-}
-
-void main_window::closeEvent(QCloseEvent *event) {
-	if (modifications_resolved())
-		event->accept();
-	else
-		event->ignore();
 }
 
 bool main_window::modifications_resolved() {
@@ -227,16 +211,24 @@ bool main_window::modifications_resolved() {
 	return true;
 }
 
+void main_window::closeEvent(QCloseEvent *event) {
+	if (modifications_resolved())
+		event->accept();
+	else
+		event->ignore();
+}
+
 void main_window::keyPressEvent(QKeyEvent *event) {
+	auto mods = event->modifiers();
 	switch (event->key()) {
 		case Qt::Key_Z:
-			if (event->modifiers() == Qt::ControlModifier)
+			if (mods == Qt::ControlModifier)
 				model->undo();
-			else if (event->modifiers() == (Qt::ControlModifier | Qt::ShiftModifier))
+			else if (mods == (Qt::ControlModifier | Qt::ShiftModifier))
 				model->redo();
 			break;
 		case Qt::Key_Y:
-			if (event->modifiers() == Qt::ControlModifier)
+			if (mods == Qt::ControlModifier)
 				model->redo();
 			break;
 		case Qt::Key_Undo:
@@ -246,7 +238,6 @@ void main_window::keyPressEvent(QKeyEvent *event) {
 			model->redo();
 			break;
 		default:
-			event->ignore();
 			break;
 	}
 }

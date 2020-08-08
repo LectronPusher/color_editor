@@ -36,8 +36,9 @@ protected:
 	virtual void showEvent(QShowEvent *event) override;
 	
 private:
-	QCheckBox *exclude_cb;
 	QCheckBox *select_cb;
+	QCheckBox *remove_cb;
+	QCheckBox *exclude_cb;
 	QCheckBox *last_checkbox = nullptr;
 	QSpinBox *side_length;
 	QComboBox *region_type;

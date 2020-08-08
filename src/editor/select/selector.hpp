@@ -18,13 +18,13 @@ public:
 	const QString name() const;
 	virtual void add_checkboxes_to_group(QButtonGroup *) {}
 	
-	static void update_image(const QImage &new_image);
+	static void set_image(const QImage &new_image);
 	
 public slots:
 	virtual void point_selected(const QPoint &) {}
 	
 signals:
-	void region_selected(editor_model::select_region region);
+	void region_selected(QRegion region, editor_model::select_type s_type);
 	
 protected:
 	QVBoxLayout *options;

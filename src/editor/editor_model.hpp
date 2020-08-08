@@ -17,7 +17,6 @@ public:
 	const static painting_mode default_mode = replace;
 	
 	enum select_type {select, exclude, remove, clear};
-	struct select_region { select_type s_type; QRegion region; };
 	
 private:
 	struct region_pair { QRegion selected; QRegion excluded; };
@@ -51,7 +50,6 @@ public slots:
 	void draw_mask(QPainter *painter, const QBrush &background = Qt::NoBrush);
 	
 	void add_region(const QRegion &region, select_type s_type);
-	void add_region(const select_region &region);
 	void clear_regions();
 	void undo();
 	void redo();

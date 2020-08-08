@@ -4,6 +4,7 @@
 #include "../mouse_mode.hpp"
 
 #include <QHBoxLayout>
+#include <QGridLayout>
 #include <QToolButton>
 #include <QLabel>
 #include <QBitmap>
@@ -19,22 +20,22 @@ static QToolButton *tool_button_text(const QString &text) {
 }
 
 // select_all
-select_all::select_all() : selector("Select All") {
-	auto exclude_b = tool_button_text("Exclude");
+select_all::select_all() : selector("Entire Image") {
 	auto select_b = tool_button_text("Select");
+	auto clear_b = tool_button_text("Clear");
 	
-	connect(exclude_b, &QToolButton::clicked, this, [=](){
-		emit selector::region_selected({editor_model::exclude, image.rect()});
-	});
 	connect(select_b, &QToolButton::clicked, this, [=](){
-		emit selector::region_selected({editor_model::select, image.rect()});
+		emit selector::region_selected(image.rect(), editor_model::select);
+	});
+	connect(clear_b, &QToolButton::clicked, this, [=](){
+		emit selector::region_selected(QRegion(), editor_model::clear);
 	});
 	
-	auto hbox = new QHBoxLayout;
-	hbox->addWidget(exclude_b);
-	hbox->addWidget(select_b);
-	options->addLayout(hbox);
 	options->addStretch(1);
+	auto hbox = new QHBoxLayout;
+	hbox->addWidget(select_b);
+	hbox->addWidget(clear_b);
+	options->addLayout(hbox);
 }
 // end select_all
 
@@ -47,14 +48,21 @@ draw::draw() : selector("Draw") {
 	region_type = new QComboBox;
 	region_type->addItem("Circle", QRegion::Ellipse);
 	region_type->addItem("Square", QRegion::Rectangle);
-	exclude_cb = new QCheckBox("Exclude");
 	select_cb = new QCheckBox("Select");
+	remove_cb = new QCheckBox("Remove");
+	exclude_cb = new QCheckBox("Exclude");
 	auto group = new QButtonGroup(this);
-	group->addButton(exclude_cb);
 	group->addButton(select_cb);
+	group->addButton(remove_cb);
+	group->addButton(exclude_cb);
+	auto clear_b = tool_button_text("Clear");
 	
-	connect(exclude_cb, &QCheckBox::stateChanged, this, &draw::set_last_checkbox);
 	connect(select_cb, &QCheckBox::stateChanged, this, &draw::set_last_checkbox);
+	connect(remove_cb, &QCheckBox::stateChanged, this, &draw::set_last_checkbox);
+	connect(exclude_cb, &QCheckBox::stateChanged, this, &draw::set_last_checkbox);
+	connect(clear_b, &QToolButton::clicked, this, [=](){
+		emit selector::region_selected(QRegion(), editor_model::clear);
+	});
 	
 	auto hbox = new QHBoxLayout;
 	hbox->addWidget(new QLabel("Size:"));
@@ -62,26 +70,29 @@ draw::draw() : selector("Draw") {
 	side_length->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
 	options->addLayout(hbox);
 	options->addWidget(region_type);
-	hbox = new QHBoxLayout;
-	hbox->addWidget(exclude_cb);
-	hbox->addWidget(select_cb);
-	options->addLayout(hbox);
 	options->addStretch(1);
+	
+	auto grid = new QGridLayout;
+	grid->addWidget(select_cb, 0, 0);
+	grid->addWidget(remove_cb, 0, 1);
+	grid->addWidget(exclude_cb, 1, 0);
+	grid->addWidget(clear_b, 1, 1);
+	options->addLayout(grid);
 }
 
 void draw::point_selected(const QPoint &point) {
-	if (!exclude_cb->isChecked() && !select_cb->isChecked())
-		return;
-	
 	QRect rect = create_rect(point);
 	auto r_type = region_type->currentData().value<QRegion::RegionType>();
 	QRegion new_region(rect, r_type);
 	new_region = new_region.intersected(image.rect());
 	
-	if (exclude_cb->isChecked())
-		emit selector::region_selected({editor_model::exclude, new_region});
-	else
-		emit selector::region_selected({editor_model::select, new_region});
+	editor_model::select_type s_type;
+	if (select_cb->isChecked())       s_type = editor_model::select;
+	else if (remove_cb->isChecked())  s_type = editor_model::remove;
+	else if (exclude_cb->isChecked()) s_type = editor_model::exclude;
+	else return;
+	
+	emit selector::region_selected(new_region, s_type);
 }
 
 QRect draw::create_rect(const QPoint &point) {
@@ -92,8 +103,9 @@ QRect draw::create_rect(const QPoint &point) {
 }
 
 void draw::add_checkboxes_to_group(QButtonGroup *group) {
-	group->addButton(exclude_cb, mouse_mode::combined_points);
 	group->addButton(select_cb, mouse_mode::combined_points);
+	group->addButton(remove_cb, mouse_mode::combined_points);
+	group->addButton(exclude_cb, mouse_mode::combined_points);
 }
 
 void draw::set_last_checkbox(int state) {
@@ -116,29 +128,42 @@ color_match::color_match() : selector("Match Colors") {
 	fuzziness->setRange(0, 100);
 	fuzziness->setValue(10);
 	fuzziness->setSuffix("%");
-	auto exclude_b = tool_button_text("Exclude");
 	auto select_b = tool_button_text("Select");
+	auto remove_b = tool_button_text("Remove");
+	auto exclude_b = tool_button_text("Exclude");
+	auto clear_b = tool_button_text("Clear");
 	
-	connect(exclude_b, &QToolButton::clicked, this, [=](){
-		emit selector::region_selected({editor_model::exclude, matching_pixels()});
-	});
 	connect(select_b, &QToolButton::clicked, this, [=](){
-		emit selector::region_selected({editor_model::select, matching_pixels()});
+		emit selector::region_selected(matching_pixels(), editor_model::select);
+	});
+	connect(remove_b, &QToolButton::clicked, this, [=](){
+		emit selector::region_selected(matching_pixels(), editor_model::remove);
+	});
+	connect(exclude_b, &QToolButton::clicked, this, [=](){
+		emit selector::region_selected(matching_pixels(), editor_model::exclude);
+	});
+	connect(clear_b, &QToolButton::clicked, this, [=](){
+		emit selector::region_selected(QRegion(), editor_model::clear);
 	});
 	
 	auto hbox = new QHBoxLayout;
 	hbox->addWidget(choose_color_cb);
+	hbox->addStretch(1);
 	hbox->addWidget(source_color);
 	options->addLayout(hbox);
 	hbox = new QHBoxLayout;
 	hbox->addWidget(new QLabel("Fuzzy:"));
+	hbox->addStretch(1);
 	hbox->addWidget(fuzziness);
 	options->addLayout(hbox);
-	hbox = new QHBoxLayout;
-	hbox->addWidget(exclude_b);
-	hbox->addWidget(select_b);
-	options->addLayout(hbox);
 	options->addStretch(1);
+	
+	auto grid = new QGridLayout;
+	grid->addWidget(select_b, 0, 0);
+	grid->addWidget(remove_b, 0, 1);
+	grid->addWidget(exclude_b, 1, 0);
+	grid->addWidget(clear_b, 1, 1);
+	options->addLayout(grid);
 }
 
 void color_match::point_selected(const QPoint &point) {

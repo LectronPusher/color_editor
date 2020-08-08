@@ -1,7 +1,5 @@
 #include "editor_model.hpp"
 
-#include <QDebug>
-
 using namespace editor;
 
 const QImage editor_model::source_image() {
@@ -84,10 +82,6 @@ void editor_model::add_region(const QRegion &region, select_type s_type) {
 			apply_change({s_type, {selected, excluded}});
 	}
 	undone_changes.clear();
-}
-
-void editor_model::add_region(const select_region &s_region) {
-	add_region(s_region.region, s_region.s_type);
 }
 
 void editor_model::clear_regions() {
