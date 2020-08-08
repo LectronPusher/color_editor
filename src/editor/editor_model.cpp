@@ -27,47 +27,6 @@ void editor_model::set_image(const QImage &new_image) {
 	applied_changes.clear();
 	undone_changes.clear();
 	image = new_image.convertToFormat(QImage::Format_ARGB32);
-	emit image_changed(image);
-}
-
-void editor_model::set_mask(const QImage& new_mask, painting_mode::mode new_mode) {
-	bool mask_changed = mask != new_mask;
-	bool mode_changed = mode != new_mode;
-	if (mask_changed)
-		mask = new_mask;
-	if (mode_changed)
-		mode = new_mode;
-	if (mask_changed || mode_changed)
-		emit contents_updated(region_rect());
-}
-
-void editor_model::apply_mask() {
-	QPainter painter(&image);
-	draw_mask(&painter, false);
-	clear_regions();
-	applied_changes.clear();
-	undone_changes.clear();
-	emit image_changed(image);
-}
-
-void editor_model::draw_mask(QPainter *painter, bool use_background) {
-	if (!mask.isNull()) {
-		painter->save();
-		painter->setClipRegion(selected_region());
-		switch (mode) {
-			case painting_mode::replace:
-				painter->setCompositionMode(QPainter::CompositionMode_Source);
-				// if there is a background, paint it, then paint over it
-				if (!use_background)
-					break;
-				painter->fillRect(region_rect(), painter->background());
-				// fall through
-			case painting_mode::over:
-				painter->setCompositionMode(QPainter::CompositionMode_SourceOver);
-		}
-		painter->drawImage(region_rect(), mask);
-		painter->restore();
-	}
 }
 
 void editor_model::add_region(const QRegion &region, select_type s_type) {

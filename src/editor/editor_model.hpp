@@ -1,11 +1,8 @@
 #pragma once
 
-#include "painting_mode.hpp"
-
 #include <QObject>
 #include <QImage>
 #include <QRegion>
-#include <QPainter>
 
 #include <forward_list>
 
@@ -44,10 +41,6 @@ public:
 public slots:
 	void set_image(const QImage &new_image);
 	
-	void set_mask(const QImage& new_mask, painting_mode::mode new_mode);
-	void apply_mask();
-	void draw_mask(QPainter *painter, bool use_background);
-	
 	void add_region(const QRegion &region, select_type s_type);
 	void clear_regions();
 	void undo();
@@ -55,15 +48,11 @@ public slots:
 	void combine_recent_changes(int n);
 	
 signals:
-	void image_changed(const QImage &new_image);
 	void contents_updated(QRect new_contents_rect);
 	void region_boundary_updated(QRect new_boundary);
 	
 private:
 	QImage image;
-	
-	QImage mask;
-	painting_mode::mode mode;
 	
 	QRegion selected;
 	QRegion excluded;

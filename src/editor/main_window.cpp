@@ -52,9 +52,6 @@ void main_window::initialize_members() {
 }
 
 void main_window::make_major_connections() {
-	// this
-	connect(model, &editor_model::image_changed,
-			this, &main_window::set_image);
 	// view
 	connect(model, &editor_model::contents_updated,
 			view, &image::image_view::redraw_rect);
@@ -79,10 +76,11 @@ void main_window::make_major_connections() {
 		connect(effect, &color::effect::altered, this, &main_window::update_effect);
 	}
 	// apply_b
-	connect(apply_b, &QToolButton::clicked, model, &editor_model::apply_mask);
+	connect(apply_b, &QToolButton::clicked, this, &main_window::apply_mask);
 }
 
 void main_window::set_image(const QImage &image) {
+	model->set_image(image);
 	select::selector::set_image(image);
 	update_effect();
 	renderer->model = model;
@@ -91,7 +89,23 @@ void main_window::set_image(const QImage &image) {
 
 void main_window::update_effect() {
 	auto effect = effect_stack->active();
-	model->set_mask(effect->create_mask(model), effect->paint_mode());
+	QImage mask = effect->create_mask(model);
+	auto mode = effect->paint_mode();
+	bool mask_changed = mask != renderer->mask;
+	bool mode_changed = mode != renderer->mode;
+	if (mask_changed)
+		renderer->mask = mask;
+	if (mode_changed)
+		renderer->mode = mode;
+	if (mask_changed || mode_changed)
+		view->redraw_rect(model->region_rect());
+}
+
+void main_window::apply_mask() {
+	QImage image = model->source_image();
+	QPainter painter(&image);
+	renderer->render(&painter, false);
+	set_image(image);
 }
 
 static QLabel *horizontal_line() {
@@ -174,7 +188,7 @@ void main_window::open_image(QString filepath) {
 			previous_file = QFileInfo(filepath);
 			QImage image(filepath);
 			if (!image.isNull())
-				model->set_image(image);
+				set_image(image);
 		}
 	}
 }
@@ -188,7 +202,7 @@ void main_window::save_as() {
 			"Image Files (*.png *.jpg *.bmp);;All Files (*)"
 		);
 		if (!filepath.isEmpty()) {
-			model->apply_mask();
+			apply_mask();
 			model->source_image().save(filepath);
 			previous_file = QFileInfo(filepath);
 		}

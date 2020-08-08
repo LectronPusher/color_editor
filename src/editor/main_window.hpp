@@ -27,6 +27,7 @@ public:
 public slots:
 	void set_image(const QImage &image);
 	void update_effect();
+	void apply_mask();
 	
 	void open_image(QString filepath = QString());
 	void save_as();
