@@ -1,7 +1,6 @@
 #pragma once
 
 #include <QObject>
-#include <QImage>
 #include <QRegion>
 
 #include <forward_list>
@@ -17,46 +16,49 @@ public:
 	
 private:
 	struct region_pair { QRegion selected; QRegion excluded; };
-	struct region_change {
-		region_change(select_type type, QRegion region);
-		region_change(select_type type, region_pair regions);
+	struct change {
+		change(select_type type, QRegion region);
+		change(select_type type, region_pair regions);
 		// boilerplate for union
-		region_change(const region_change &other);
-		region_change operator=(const region_change &other);
-		~region_change();
+		change(const change &other);
+		change operator=(const change &other);
+		~change();
 		
 		select_type s_type;
 		union {
 			QRegion added_region;
 			region_pair removed_regions;
 		};
-	}; // region_change
+	}; // change
 	
 public:
+	selection(QObject *parent);
+	
 	QRegion selected_region() const;
 	QRect region_rect() const;
 	bool has_selection() const;
 	
 public slots:
 	void add_region(const QRegion &region, select_type s_type);
-	void clear_regions();
 	void undo();
 	void redo();
-	void combine_recent_changes(int n);
+	void combine_changes(int n);
 	
 signals:
 	void contents_updated(QRect new_contents_rect);
-	void region_boundary_updated(QRect new_boundary);
+	void boundary_updated(QRect new_boundary);
 	
 private:
 	QRegion selected;
 	QRegion excluded;
 	QRegion combined;
+	QRect combined_boundary;
 	
-	std::forward_list<region_change> applied_changes;
-	std::forward_list<region_change> undone_changes;
+	std::forward_list<change> applied;
+	std::forward_list<change> undone;
 	
-	void apply_change(const region_change &data);
+	void apply_change(const change &data);
+	void undo_change(const change &data);
 	void update_combined();
 	
 }; // selection

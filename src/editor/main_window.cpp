@@ -27,8 +27,7 @@ static QToolButton *tool_button_text(const QString &text) {
 }
 
 void main_window::initialize_members() {
-	selection = new select::selection;
-	selection->setParent(this);
+	selection = new select::selection(this);
 	renderer = new image::model_renderer(selection);
 	
 	view = new image::image_view;
@@ -56,7 +55,7 @@ void main_window::make_major_connections() {
 	connect(selection, &select::selection::contents_updated,
 			view, &image::image_view::redraw_rect);
 	connect(view, &image::image_view::combine_points,
-			selection, &select::selection::combine_recent_changes);
+			selection, &select::selection::combine_changes);
 	connect(mouse_mode_group, &QButtonGroup::idToggled,
 			this, [=](int id, bool checked){
 				if (checked)
@@ -70,8 +69,8 @@ void main_window::make_major_connections() {
 				selector, &select::selector::point_selected);
 	}
 	// effect
-	connect(selection, &select::selection::region_boundary_updated,
-			this, [=](){ update_effect(); });
+	connect(selection, &select::selection::boundary_updated,
+			this, &main_window::update_effect);
 	for (auto effect : *effect_stack) {
 		connect(effect, &color::effect::altered, this, &main_window::update_effect);
 		connect(effect, &color::effect::mode_changed, this, &main_window::update_mode);
