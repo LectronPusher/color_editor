@@ -74,6 +74,7 @@ void main_window::make_major_connections() {
 			this, [=](){ update_effect(); });
 	for (auto effect : *effect_stack) {
 		connect(effect, &color::effect::altered, this, &main_window::update_effect);
+		connect(effect, &color::effect::mode_changed, this, &main_window::update_mode);
 	}
 	// apply_b
 	connect(apply_b, &QToolButton::clicked, this, &main_window::apply_mask);
@@ -88,17 +89,21 @@ void main_window::set_image(const QImage &image) {
 }
 
 void main_window::update_effect() {
-	auto effect = effect_stack->active();
-	QImage mask = effect->create_mask(model);
-	auto mode = effect->paint_mode();
-	bool mask_changed = mask != renderer->mask;
-	bool mode_changed = mode != renderer->mode;
-	if (mask_changed)
+	QImage mask = effect_stack->active()->create_mask(
+		model->source_image(),
+		model->region_rect()
+	);
+	if (mask != renderer->mask) {
 		renderer->mask = mask;
-	if (mode_changed)
-		renderer->mode = mode;
-	if (mask_changed || mode_changed)
 		view->redraw_rect(model->region_rect());
+	}
+}
+
+void main_window::update_mode(painting_mode::mode new_mode) {
+	if (renderer->mode != new_mode) {
+		renderer->mode = new_mode;
+		view->redraw_rect(model->region_rect());
+	}
 }
 
 void main_window::apply_mask() {

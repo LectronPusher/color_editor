@@ -17,15 +17,10 @@ class single_color : public effect {
 	
 public:
 	single_color();
-	painting_mode::mode paint_mode() override;
-	QImage create_mask(editor_model *model) override;
-	
-private slots:
-	void set_label_transparency(int value);
+	QImage create_mask(const QImage &image, const QRect &) override;
 	
 private:
 	color_label *stored_color;
-	QComboBox *paint_mode_box;
 	
 }; // single_color
 
@@ -35,7 +30,7 @@ class gradient : public effect {
 	
 public:
 	gradient();
-	QImage create_mask(editor_model *model) override;
+	QImage create_mask(const QImage &image, const QRect &boundary) override;
 	
 private slots:
 	void swap_colors();
@@ -55,7 +50,7 @@ class pixellate : public effect {
 	
 public:
 	pixellate();
-	QImage create_mask(editor_model *model) override;
+	QImage create_mask(const QImage &image, const QRect &) override;
 	
 private:
 	QSpinBox *pixel_size;

@@ -98,8 +98,8 @@ void draw::point_selected(const QPoint &point) {
 QRect draw::create_rect(const QPoint &point) {
 	int s = side_length->value();
 	// make point center if odd, top left of central square if even
-	int b = (s % 2 == 0) ? (s - 1) /2 : s / 2;
-	return {point - QPoint(b, b), QSize(s, s)};
+	int h_s = (s - 1) /2;
+	return {point - QPoint(h_s, h_s), QSize(s, s)};
 }
 
 void draw::add_checkboxes_to_group(QButtonGroup *group) {

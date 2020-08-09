@@ -7,15 +7,16 @@ effect::effect(QString name_in) : effect_name(name_in) {
 	setLayout(options);
 }
 
-const QString effect::name()  const {
+const QString effect::name() const {
 	return effect_name;
 }
 
-editor::painting_mode::mode effect::paint_mode() {
-	return painting_mode::default_mode;
+void effect::set_mode(painting_mode::mode new_mode) {
+	emit mode_changed(mode = new_mode, {});
 }
 
 void effect::showEvent(QShowEvent *event) {
 	QWidget::showEvent(event);
+	emit mode_changed(mode, {});
 	emit altered();
 }

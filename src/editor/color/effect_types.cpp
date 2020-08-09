@@ -16,24 +16,28 @@ using namespace editor::color::effect_types;
 single_color::single_color() : effect("Single Color") {
 	stored_color = new color_label(Qt::red);
 	stored_color->enable_transparency();
+	auto spinbox = new QSpinBox;
+	spinbox->setRange(0, 255);
 	auto slider = new QSlider(Qt::Horizontal);
 	slider->setMinimum(0);
 	slider->setMaximum(255);
-	auto spinbox = new QSpinBox;
-	spinbox->setRange(0, 255);
-	paint_mode_box = new QComboBox;
-	paint_mode_box->addItem("Layer Over", painting_mode::over);
-	paint_mode_box->addItem("Replace", painting_mode::replace);
+	auto mode_box = new QComboBox;
 	
 	connect(stored_color, &color_label::color_changed, this, &effect::altered);
-	connect(slider, &QSlider::valueChanged,
-			this, &single_color::set_label_transparency);
+	connect(stored_color, &color_label::color_changed,
+			this, [slider](const QColor &c){ slider->setValue(c.alpha()); });
+	connect(slider, &QSlider::valueChanged, stored_color, &color_label::set_alpha);
 	connect(slider, &QSlider::valueChanged, spinbox, &QSpinBox::setValue);
-	connect(spinbox, QOverload<int>::of(&QSpinBox::valueChanged),
-			slider, &QSlider::setValue);
-	connect(paint_mode_box, QOverload<int>::of(&QComboBox::currentIndexChanged),
-			this, &effect::altered);
+	auto value_changed = QOverload<int>::of(&QSpinBox::valueChanged);
+	connect(spinbox, value_changed, slider, &QSlider::setValue);
+	auto index_changed = QOverload<int>::of(&QComboBox::currentIndexChanged);
+	connect(mode_box, index_changed, this, [this, mode_box](){
+		set_mode(mode_box->currentData().value<painting_mode::mode>());
+	});
 	
+	// add the values after the connections to update others
+	mode_box->addItem("Overlay", painting_mode::over);
+	mode_box->addItem("Replace", painting_mode::replace);
 	slider->setValue(255);
 	
 	auto hbox = new QHBoxLayout;
@@ -42,28 +46,18 @@ single_color::single_color() : effect("Single Color") {
 	options->addLayout(hbox);
 	hbox = new QHBoxLayout;
 	hbox->addWidget(new QLabel("Opacity:"));
+	hbox->addStretch(1);
 	hbox->addWidget(spinbox);
-	spinbox->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
 	options->addLayout(hbox);
 	options->addWidget(slider);
-	options->addWidget(paint_mode_box);
+	options->addWidget(mode_box);
 	options->addStretch(1);
 }
 
-void single_color::set_label_transparency(int value) {
-	QColor color = stored_color->color();
-	color.setAlpha(value);
-	stored_color->set_color(color);
-}
-
-QImage single_color::create_mask(editor_model *model) {
-	QImage mask(model->image_rect().size(), QImage::Format_ARGB32);
+QImage single_color::create_mask(const QImage &image, const QRect &) {
+	QImage mask(image.size(), QImage::Format_ARGB32);
 	mask.fill(stored_color->color());
 	return mask;
-}
-
-editor::painting_mode::mode single_color::paint_mode() {
-	return paint_mode_box->currentData().value<painting_mode::mode>();
 }
 // end single_color
 
@@ -98,10 +92,10 @@ gradient::gradient() : effect("Gradient") {
 	options->addStretch(1);
 }
 
-QImage gradient::create_mask(editor_model *model) {
-	QImage mask(model->image_rect().size(), QImage::Format_ARGB32);
+QImage gradient::create_mask(const QImage &image, const QRect &boundary) {
+	QImage mask(image.size(), QImage::Format_ARGB32);
 	QPainter painter(&mask);
-	painter.fillRect(model->image_rect(), create_gradient(model->region_rect()));
+	painter.fillRect(image.rect(), create_gradient(boundary));
 	return mask;
 }
 
@@ -139,30 +133,26 @@ pixellate::pixellate() : effect("Pixellate") {
 	
 	auto hbox = new QHBoxLayout;
 	hbox->addWidget(new QLabel("Pixel Size:"));
+	hbox->addStretch(1);
 	hbox->addWidget(pixel_size);
-	pixel_size->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
 	options->addLayout(hbox);
 	options->addStretch(1);
 }
 
-QImage pixellate::create_mask(editor_model *model) {
+QImage pixellate::create_mask(const QImage &image, const QRect &) {
 	if (pixel_size->value() == 1)
-		return model->source_image();
+		return image;
 	
-	QImage mask(model->image_rect().size(), QImage::Format_ARGB32);
+	QImage mask(image.size(), QImage::Format_ARGB32);
 	QPainter painter(&mask);
 	painter.setCompositionMode(QPainter::CompositionMode_Source);
-	pixellate_image(&painter, model->source_image());
+	pixellate_image(&painter, image);
 	return mask;
-}
-
-static int under_half(int i) {
-	return (i % 2 == 0) ? (i - 1) / 2 : i / 2;
 }
 
 void pixellate::pixellate_image(QPainter *painter, const QImage &source) {
 	int size = pixel_size->value();
-	int h_s = under_half(size);
+	int h_s = (size - 1) / 2; // half of size (matches create_rect)
 	int width = source.width();
 	int height = source.height();
 	
@@ -194,7 +184,8 @@ void pixellate::pixellate_image(QPainter *painter, const QImage &source) {
 
 QRect pixellate::create_rect(const QPoint &point) {
 	int s = pixel_size->value();
-	int h = under_half(s);
-	return {point - QPoint(h, h), QSize(s, s)};
+	// make point center if odd, top left of central square if even
+	int h_s = (s - 1) / 2;
+	return {point - QPoint(h_s, h_s), QSize(s, s)};
 }
 // end pixellate

@@ -1,7 +1,6 @@
 #pragma once
 
 #include "../painting_mode.hpp"
-#include "../editor_model.hpp"
 
 #include <QWidget>
 #include <QVBoxLayout>
@@ -15,17 +14,22 @@ class effect : public QWidget {
 public:
 	effect(QString name_in);
 	const QString name() const;
-	virtual painting_mode::mode paint_mode();
-	virtual QImage create_mask(editor_model *model) = 0;
+	virtual QImage create_mask(const QImage &image, const QRect &boundary) = 0;
 	
 signals:
 	void altered();
+	void mode_changed(painting_mode::mode new_mode, QPrivateSignal);
+	
+protected slots:
+	void set_mode(painting_mode::mode new_mode);
 	
 protected:
 	QVBoxLayout *options;
+	
 	virtual void showEvent(QShowEvent *event) override;
 	
 private:
+	painting_mode::mode mode = painting_mode::default_mode;
 	const QString effect_name;
 	
 }; // color_effect
