@@ -2,8 +2,9 @@
 
 #include <QFrame>
 #include <QColor>
+#include <QColorDialog>
+#include <QPointer>
 #include <QPaintEvent>
-#include <QPainter>
 
 namespace editor {
 namespace color {
@@ -28,13 +29,15 @@ signals:
 	
 protected:
 	virtual void paintEvent(QPaintEvent *event) override;
-	virtual void mousePressEvent(QMouseEvent *event) override;
 	virtual void hideEvent(QHideEvent *event) override;
+	virtual void mousePressEvent(QMouseEvent *event) override;
 	
 private:
 	QColor fill_color;
 	bool can_be_transparent = false;
 	bool is_interactive = true;
+	
+	QPointer<QColorDialog> dialog;
 	
 	void open_dialog();
 	
