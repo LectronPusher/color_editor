@@ -7,8 +7,9 @@
 #include <forward_list>
 
 namespace editor {
+namespace select {
 
-class editor_model : public QObject {
+class selection : public QObject {
 	Q_OBJECT
 	
 public:
@@ -32,15 +33,11 @@ private:
 	}; // region_change
 	
 public:
-	const QImage source_image();
-	const QRect image_rect();
-	const QRegion selected_region();
-	const QRect region_rect();
-	bool is_altered();
+	QRegion selected_region() const;
+	QRect region_rect() const;
+	bool has_selection() const;
 	
 public slots:
-	void set_image(const QImage &new_image);
-	
 	void add_region(const QRegion &region, select_type s_type);
 	void clear_regions();
 	void undo();
@@ -52,8 +49,6 @@ signals:
 	void region_boundary_updated(QRect new_boundary);
 	
 private:
-	QImage image;
-	
 	QRegion selected;
 	QRegion excluded;
 	QRegion combined;
@@ -64,8 +59,7 @@ private:
 	void apply_change(const region_change &data);
 	void update_combined();
 	
-}; // editor_model
+}; // selection
 
+} // select
 } // editor
-
-Q_DECLARE_METATYPE(editor::editor_model::select_type);

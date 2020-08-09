@@ -1,6 +1,6 @@
 #pragma once
 
-#include "editor_model.hpp"
+#include "select/selection.hpp"
 #include "image/image_view.hpp"
 #include "image/model_renderer.hpp"
 #include "widget_stack.hpp"
@@ -38,8 +38,9 @@ protected:
 	void keyPressEvent(QKeyEvent *event) override;
 	
 private:
-	// all the data in one little bundle, shared with image_view and selectors
-	editor_model *model;
+	// the current selection
+	// TODO replace with list for undoing diff effects
+	select::selection *selection;
 	// a QGraphicsView that handles mouse input and zooming
 	image::image_view *view;
 	// communicates the mouse mode to view, used with selector checkboxes

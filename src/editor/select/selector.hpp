@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../editor_model.hpp"
+#include "selection.hpp"
 
 #include <QWidget>
 #include <QButtonGroup>
@@ -24,7 +24,7 @@ public slots:
 	virtual void point_selected(const QPoint &) {}
 	
 signals:
-	void region_selected(QRegion region, editor_model::select_type s_type);
+	void region_selected(QRegion region, selection::select_type s_type);
 	
 protected:
 	QVBoxLayout *options;

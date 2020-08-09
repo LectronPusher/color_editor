@@ -1,35 +1,20 @@
-#include "editor_model.hpp"
+#include "selection.hpp"
 
-using namespace editor;
+using namespace editor::select;
 
-const QImage editor_model::source_image() {
-	return image;
-}
-
-const QRect editor_model::image_rect() {
-	return image.rect();
-}
-
-const QRegion editor_model::selected_region() {
+QRegion selection::selected_region() const {
 	return combined;
 }
 
-const QRect editor_model::region_rect() {
+QRect selection::region_rect() const {
 	return combined.boundingRect();
 }
 
-bool editor_model::is_altered() {
+bool selection::has_selection() const {
 	return !applied_changes.empty();
 }
 
-void editor_model::set_image(const QImage &new_image) {
-	clear_regions();
-	applied_changes.clear();
-	undone_changes.clear();
-	image = new_image.convertToFormat(QImage::Format_ARGB32);
-}
-
-void editor_model::add_region(const QRegion &region, select_type s_type) {
+void selection::add_region(const QRegion &region, select_type s_type) {
 	switch (s_type) {
 		case select:
 			apply_change({s_type, region - selected});
@@ -46,11 +31,11 @@ void editor_model::add_region(const QRegion &region, select_type s_type) {
 	undone_changes.clear();
 }
 
-void editor_model::clear_regions() {
+void selection::clear_regions() {
 	add_region(QRegion(), clear);
 }
 
-void editor_model::apply_change(const region_change &data) {
+void selection::apply_change(const region_change &data) {
 	switch (data.s_type) {
 		case select:
 			selected |= data.added_region;
@@ -76,7 +61,7 @@ void editor_model::apply_change(const region_change &data) {
 	update_combined();
 }
 
-void editor_model::update_combined() {
+void selection::update_combined() {
 	QRegion old = combined;
 	combined = selected - excluded;
 	QRect difference = (combined ^ old).boundingRect();
@@ -86,7 +71,7 @@ void editor_model::update_combined() {
 		emit region_boundary_updated(combined.boundingRect());
 }
 
-void editor_model::undo() {
+void selection::undo() {
 	if (!applied_changes.empty()) {
 		const region_change &data = applied_changes.front();
 		switch (data.s_type) {
@@ -110,14 +95,14 @@ void editor_model::undo() {
 	}
 }
 
-void editor_model::redo() {
+void selection::redo() {
 	if (!undone_changes.empty()) {
 		apply_change(undone_changes.front());
 		undone_changes.pop_front();
 	}
 }
 
-void editor_model::combine_recent_changes(int n) {
+void selection::combine_recent_changes(int n) {
 	region_change parent = applied_changes.front();
 	applied_changes.pop_front();
 	for (int i = 1; i < n; ++i) {
@@ -134,13 +119,13 @@ void editor_model::combine_recent_changes(int n) {
 }
 
 // region_change
-editor_model::region_change::region_change(select_type type, QRegion region)
+selection::region_change::region_change(select_type type, QRegion region)
 : s_type(type), added_region(region) {}
 
-editor_model::region_change::region_change(select_type type, region_pair regions)
+selection::region_change::region_change(select_type type, region_pair regions)
 : s_type(type), removed_regions(regions) {}
 
-editor_model::region_change::region_change(const region_change &other) {
+selection::region_change::region_change(const region_change &other) {
 	s_type = other.s_type;
 	if (s_type == remove || s_type == clear)
 		new(&removed_regions) region_pair(other.removed_regions);
@@ -148,7 +133,7 @@ editor_model::region_change::region_change(const region_change &other) {
 		new(&added_region) QRegion(other.added_region);
 }
 
-editor_model::region_change editor_model::region_change::operator=(const region_change &other) {
+selection::region_change selection::region_change::operator=(const region_change &other) {
 	s_type = other.s_type;
 	if (s_type == remove || s_type == clear)
 		new(&removed_regions) region_pair(other.removed_regions);
@@ -157,7 +142,7 @@ editor_model::region_change editor_model::region_change::operator=(const region_
 	return *this;
 }
 
-editor_model::region_change::~region_change() {
+selection::region_change::~region_change() {
 	if (s_type == remove || s_type == clear)
 		removed_regions.~region_pair();
 	else

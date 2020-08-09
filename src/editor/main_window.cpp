@@ -27,9 +27,9 @@ static QToolButton *tool_button_text(const QString &text) {
 }
 
 void main_window::initialize_members() {
-	model = new editor_model;
-	model->setParent(this);
-	renderer = new image::model_renderer(model);
+	selection = new select::selection;
+	selection->setParent(this);
+	renderer = new image::model_renderer(selection);
 	
 	view = new image::image_view;
 	view->scene()->addItem(renderer);
@@ -53,10 +53,10 @@ void main_window::initialize_members() {
 
 void main_window::make_major_connections() {
 	// view
-	connect(model, &editor_model::contents_updated,
+	connect(selection, &select::selection::contents_updated,
 			view, &image::image_view::redraw_rect);
 	connect(view, &image::image_view::combine_points,
-			model, &editor_model::combine_recent_changes);
+			selection, &select::selection::combine_recent_changes);
 	connect(mouse_mode_group, &QButtonGroup::idToggled,
 			this, [=](int id, bool checked){
 				if (checked)
@@ -65,12 +65,12 @@ void main_window::make_major_connections() {
 	// selector
 	for (auto selector : *selector_stack) {
 		connect(selector, &select::selector::region_selected,
-				model, &editor_model::add_region);
+				selection, &select::selection::add_region);
 		connect(view, &image::image_view::point_selected,
 				selector, &select::selector::point_selected);
 	}
 	// effect
-	connect(model, &editor_model::region_boundary_updated,
+	connect(selection, &select::selection::region_boundary_updated,
 			this, [=](){ update_effect(); });
 	for (auto effect : *effect_stack) {
 		connect(effect, &color::effect::altered, this, &main_window::update_effect);
@@ -81,33 +81,34 @@ void main_window::make_major_connections() {
 }
 
 void main_window::set_image(const QImage &image) {
-	model->set_image(image);
+	renderer->source = image;
+	// TODO break selection undo redo
 	select::selector::set_image(image);
 	update_effect();
-	renderer->model = model;
+	renderer->selection = selection;
 	view->reset_view_rect(image.rect());
 }
 
 void main_window::update_effect() {
 	QImage mask = effect_stack->active()->create_mask(
-		model->source_image(),
-		model->region_rect()
+		renderer->source,
+		selection->region_rect()
 	);
 	if (mask != renderer->mask) {
 		renderer->mask = mask;
-		view->redraw_rect(model->region_rect());
+		view->redraw_rect(selection->region_rect());
 	}
 }
 
 void main_window::update_mode(painting_mode::mode new_mode) {
 	if (renderer->mode != new_mode) {
 		renderer->mode = new_mode;
-		view->redraw_rect(model->region_rect());
+		view->redraw_rect(selection->region_rect());
 	}
 }
 
 void main_window::apply_mask() {
-	QImage image = model->source_image();
+	QImage image = renderer->source;
 	QPainter painter(&image);
 	renderer->render(&painter, false);
 	set_image(image);
@@ -157,8 +158,8 @@ QHBoxLayout *main_window::create_image_buttons() {
 	
 	connect(open_b, &QToolButton::clicked, this, [=](){ open_image(); });
 	connect(save_as_b, &QToolButton::clicked, this, &main_window::save_as);
-	connect(undo_b, &QToolButton::clicked, model, &editor_model::undo);
-	connect(redo_b, &QToolButton::clicked, model, &editor_model::redo);
+	connect(undo_b, &QToolButton::clicked, selection, &select::selection::undo);
+	connect(redo_b, &QToolButton::clicked, selection, &select::selection::redo);
 	connect(zoom_in_b, &QToolButton::clicked, view, &image::image_view::zoom_in);
 	connect(zoom_out_b, &QToolButton::clicked, view, &image::image_view::zoom_out);
 	connect(reset_zoom_b, &QToolButton::clicked, view, &image::image_view::reset_zoom);
@@ -199,7 +200,7 @@ void main_window::open_image(QString filepath) {
 }
 
 void main_window::save_as() {
-	if (!model->source_image().isNull()) {
+	if (!renderer->source.isNull()) {
 		QString filepath = QFileDialog::getSaveFileName(
 			this,
 			"Save As",
@@ -208,14 +209,14 @@ void main_window::save_as() {
 		);
 		if (!filepath.isEmpty()) {
 			apply_mask();
-			model->source_image().save(filepath);
+			renderer->source.save(filepath);
 			previous_file = QFileInfo(filepath);
 		}
 	}
 }
 
 bool main_window::modifications_resolved() {
-	if (model->is_altered()) {
+	if (selection->has_selection()) {
 		auto dialog_ans = QMessageBox::warning(
 			this,
 			"Unsaved Changes",
@@ -242,19 +243,19 @@ void main_window::keyPressEvent(QKeyEvent *event) {
 	switch (event->key()) {
 		case Qt::Key_Z:
 			if (mods == Qt::ControlModifier)
-				model->undo();
+				selection->undo();
 			else if (mods == (Qt::ControlModifier | Qt::ShiftModifier))
-				model->redo();
+				selection->redo();
 			break;
 		case Qt::Key_Y:
 			if (mods == Qt::ControlModifier)
-				model->redo();
+				selection->redo();
 			break;
 		case Qt::Key_Undo:
-			model->undo();
+			selection->undo();
 			break;
 		case Qt::Key_Redo:
-			model->redo();
+			selection->redo();
 			break;
 		default:
 			break;
