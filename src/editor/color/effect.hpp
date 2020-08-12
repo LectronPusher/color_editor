@@ -14,7 +14,7 @@ class effect : public QWidget {
 public:
 	effect(QString name_in);
 	const QString name() const;
-	virtual QImage create_mask(const QImage &image, const QRect &boundary) = 0;
+	virtual QImage create_effect(const QImage &image, const QRect &boundary) = 0;
 	
 signals:
 	void altered();

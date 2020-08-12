@@ -17,7 +17,7 @@ class single_color : public effect {
 	
 public:
 	single_color();
-	QImage create_mask(const QImage &image, const QRect &) override;
+	QImage create_effect(const QImage &image, const QRect &) override;
 	
 private:
 	color_label *stored_color;
@@ -30,7 +30,7 @@ class gradient : public effect {
 	
 public:
 	gradient();
-	QImage create_mask(const QImage &image, const QRect &boundary) override;
+	QImage create_effect(const QImage &image, const QRect &boundary) override;
 	
 private slots:
 	void swap_colors();
@@ -50,7 +50,7 @@ class pixellate : public effect {
 	
 public:
 	pixellate();
-	QImage create_mask(const QImage &image, const QRect &) override;
+	QImage create_effect(const QImage &image, const QRect &) override;
 	
 private:
 	QSpinBox *pixel_size;

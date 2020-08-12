@@ -54,10 +54,10 @@ single_color::single_color() : effect("Single Color") {
 	options->addStretch(1);
 }
 
-QImage single_color::create_mask(const QImage &image, const QRect &) {
-	QImage mask(image.size(), QImage::Format_ARGB32);
-	mask.fill(stored_color->color());
-	return mask;
+QImage single_color::create_effect(const QImage &image, const QRect &) {
+	QImage effect(image.size(), QImage::Format_ARGB32);
+	effect.fill(stored_color->color());
+	return effect;
 }
 // end single_color
 
@@ -92,11 +92,11 @@ gradient::gradient() : effect("Gradient") {
 	options->addStretch(1);
 }
 
-QImage gradient::create_mask(const QImage &image, const QRect &boundary) {
-	QImage mask(image.size(), QImage::Format_ARGB32);
-	QPainter painter(&mask);
+QImage gradient::create_effect(const QImage &image, const QRect &boundary) {
+	QImage effect(image.size(), QImage::Format_ARGB32);
+	QPainter painter(&effect);
 	painter.fillRect(image.rect(), create_gradient(boundary));
-	return mask;
+	return effect;
 }
 
 void gradient::swap_colors() {
@@ -139,15 +139,15 @@ pixellate::pixellate() : effect("Pixellate") {
 	options->addStretch(1);
 }
 
-QImage pixellate::create_mask(const QImage &image, const QRect &) {
+QImage pixellate::create_effect(const QImage &image, const QRect &) {
 	if (pixel_size->value() == 1)
 		return image;
 	
-	QImage mask(image.size(), QImage::Format_ARGB32);
-	QPainter painter(&mask);
+	QImage effect(image.size(), QImage::Format_ARGB32);
+	QPainter painter(&effect);
 	painter.setCompositionMode(QPainter::CompositionMode_Source);
 	pixellate_image(&painter, image);
-	return mask;
+	return effect;
 }
 
 void pixellate::pixellate_image(QPainter *painter, const QImage &source) {

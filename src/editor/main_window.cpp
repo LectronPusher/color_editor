@@ -70,11 +70,24 @@ void main_window::make_major_connections() {
 	connect(selection, &select::selection::boundary_updated,
 			this, &main_window::update_effect);
 	for (auto effect : *effect_stack) {
-		connect(effect, &color::effect::altered, this, &main_window::update_effect);
-		connect(effect, &color::effect::mode_changed, this, &main_window::update_mode);
+		connect(effect, &color::effect::altered,
+				this, &main_window::update_effect);
+		connect(effect, &color::effect::mode_changed,
+				this, [=](painting_mode::mode m){ renderer->update_mode(m); });
 	}
 	// apply_b
-	connect(apply_b, &QToolButton::clicked, this, &main_window::apply_mask);
+	connect(apply_b, &QToolButton::clicked, this, &main_window::apply_effect);
+}
+
+void main_window::update_effect() {
+	if (selection) {
+		renderer->update_effect(
+			effect_stack->active()->create_effect(
+				renderer->source,
+				selection->region_rect()
+			)
+		);
+	}
 }
 
 void main_window::set_image(const QImage &image) {
@@ -88,28 +101,10 @@ void main_window::set_image(const QImage &image) {
 	view->redraw_rect(rect);
 }
 
-void main_window::update_effect() {
-	QImage mask = effect_stack->active()->create_mask(
-		renderer->source,
-		selection->region_rect()
-	);
-	if (mask != renderer->mask) {
-		renderer->mask = mask;
-		view->redraw_rect(selection->region_rect());
-	}
-}
-
-void main_window::update_mode(painting_mode::mode new_mode) {
-	if (renderer->mode != new_mode) {
-		renderer->mode = new_mode;
-		view->redraw_rect(selection->region_rect());
-	}
-}
-
-void main_window::apply_mask() {
+void main_window::apply_effect() {
 	QImage image = renderer->source;
 	QPainter painter(&image);
-	renderer->render(&painter, false);
+	renderer->render_effect(&painter, false);
 	set_image(image);
 }
 
@@ -193,7 +188,7 @@ void main_window::open_image(QString filepath) {
 			previous_file = QFileInfo(filepath);
 			QImage image(filepath);
 			if (!image.isNull())
-				set_image(image);
+				set_image(image.convertToFormat(QImage::Format_ARGB32));
 		}
 	}
 }
@@ -207,7 +202,7 @@ void main_window::save_as() {
 			"Image Files (*.png *.jpg *.bmp);;All Files (*)"
 		);
 		if (!filepath.isEmpty()) {
-			apply_mask();
+			apply_effect();
 			renderer->source.save(filepath);
 			previous_file = QFileInfo(filepath);
 		}
@@ -215,7 +210,10 @@ void main_window::save_as() {
 }
 
 bool main_window::modifications_resolved() {
-	if (selection->has_selection()) {
+	if (
+		!renderer->no_effective_effect() ||
+		renderer->source != QImage(previous_file.filePath())
+	) {
 		auto dialog_ans = QMessageBox::warning(
 			this,
 			"Unsaved Changes",

@@ -27,14 +27,13 @@ public:
 public slots:
 	void set_image(const QImage &image);
 	void update_effect();
-	void update_mode(painting_mode::mode new_mode);
-	void apply_mask();
+	void apply_effect();
 	
 	void open_image(QString filepath = QString());
 	void save_as();
 	
 protected:
-	void closeEvent(QCloseEvent *event);
+	void closeEvent(QCloseEvent *event) override;
 	void keyPressEvent(QKeyEvent *event) override;
 	
 private:
