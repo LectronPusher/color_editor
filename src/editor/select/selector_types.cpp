@@ -25,10 +25,10 @@ select_all::select_all() : selector("Entire Image") {
 	auto clear_b = tool_button_text("Clear");
 	
 	connect(select_b, &QToolButton::clicked, this, [=](){
-		emit selector::region_selected(image.rect(), selection::select);
+		emit selector::region_selected(select, image.rect());
 	});
 	connect(clear_b, &QToolButton::clicked, this, [=](){
-		emit selector::region_selected(QRegion(), selection::clear);
+		emit selector::region_selected(clear, QRegion());
 	});
 	
 	options->addStretch(1);
@@ -61,7 +61,7 @@ draw::draw() : selector("Draw") {
 	connect(remove_cb, &QCheckBox::stateChanged, this, &draw::set_last_checkbox);
 	connect(exclude_cb, &QCheckBox::stateChanged, this, &draw::set_last_checkbox);
 	connect(clear_b, &QToolButton::clicked, this, [=](){
-		emit selector::region_selected(QRegion(), selection::clear);
+		emit selector::region_selected(clear, QRegion());
 	});
 	
 	auto hbox = new QHBoxLayout;
@@ -86,13 +86,13 @@ void draw::point_selected(const QPoint &point) {
 	QRegion new_region(rect, r_type);
 	new_region = new_region.intersected(image.rect());
 	
-	selection::select_type s_type;
-	if (select_cb->isChecked())       s_type = selection::select;
-	else if (remove_cb->isChecked())  s_type = selection::remove;
-	else if (exclude_cb->isChecked()) s_type = selection::exclude;
+	select_type s_type;
+	if (select_cb->isChecked())       s_type = select;
+	else if (remove_cb->isChecked())  s_type = remove;
+	else if (exclude_cb->isChecked()) s_type = exclude;
 	else return;
 	
-	emit selector::region_selected(new_region, s_type);
+	emit selector::region_selected(s_type, new_region);
 }
 
 QRect draw::create_rect(const QPoint &point) {
@@ -134,16 +134,16 @@ color_match::color_match() : selector("Match Colors") {
 	auto clear_b = tool_button_text("Clear");
 	
 	connect(select_b, &QToolButton::clicked, this, [=](){
-		emit selector::region_selected(matching_pixels(), selection::select);
+		emit selector::region_selected(select, matching_pixels());
 	});
 	connect(remove_b, &QToolButton::clicked, this, [=](){
-		emit selector::region_selected(matching_pixels(), selection::remove);
+		emit selector::region_selected(remove, matching_pixels());
 	});
 	connect(exclude_b, &QToolButton::clicked, this, [=](){
-		emit selector::region_selected(matching_pixels(), selection::exclude);
+		emit selector::region_selected(exclude, matching_pixels());
 	});
 	connect(clear_b, &QToolButton::clicked, this, [=](){
-		emit selector::region_selected(QRegion(), selection::clear);
+		emit selector::region_selected(clear, QRegion());
 	});
 	
 	auto hbox = new QHBoxLayout;

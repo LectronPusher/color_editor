@@ -28,6 +28,7 @@ static QToolButton *tool_button_text(const QString &text) {
 
 void main_window::initialize_members() {
 	selection = new select::selection(this);
+	
 	renderer = new image::model_renderer(selection);
 	
 	view = new image::image_view;
@@ -157,8 +158,8 @@ QHBoxLayout *main_window::create_image_buttons() {
 	
 	connect(open_b, &QToolButton::clicked, this, [=](){ open_image(); });
 	connect(save_as_b, &QToolButton::clicked, this, &main_window::save_as);
-	connect(undo_b, &QToolButton::clicked, selection, &select::selection::undo);
-	connect(redo_b, &QToolButton::clicked, selection, &select::selection::redo);
+	connect(undo_b, &QToolButton::clicked, this, [=](){ selection->undo(); });
+	connect(redo_b, &QToolButton::clicked, this, [=](){ selection->redo(); });
 	connect(zoom_in_b, &QToolButton::clicked, view, &image::image_view::zoom_in);
 	connect(zoom_out_b, &QToolButton::clicked, view, &image::image_view::zoom_out);
 	connect(reset_zoom_b, &QToolButton::clicked, view, &image::image_view::reset_zoom);

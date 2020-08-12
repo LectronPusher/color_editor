@@ -8,6 +8,7 @@ SOURCES += src/main.cpp \
 		   src/editor/main_window.cpp \
 		   src/editor/image/image_view.cpp \
 		   src/editor/image/model_renderer.cpp \
+		   src/editor/select/change.cpp \
 		   src/editor/select/selection.cpp \
 		   src/editor/select/selector.cpp \
 		   src/editor/select/selector_types.cpp \
@@ -18,9 +19,13 @@ SOURCES += src/main.cpp \
 HEADERS += src/editor/main_window.hpp \
 		   src/editor/widget_stack.hpp \
 		   src/editor/mouse_mode.hpp \
+		   src/editor/painting_mode.hpp \
+		   src/editor/stack.hpp \
+		   src/editor/undo_base.hpp \
 		   src/editor/image/image_view.hpp \
 		   src/editor/image/model_renderer.hpp \
 		   src/editor/image/circle_cursor.hpp \
+		   src/editor/select/change.hpp \
 		   src/editor/select/selection.hpp \
 		   src/editor/select/selector.hpp \
 		   src/editor/select/selector_types.hpp \

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "selection.hpp"
+#include "select_type.hpp"
 
 #include <QWidget>
 #include <QButtonGroup>
@@ -24,7 +24,7 @@ public slots:
 	virtual void point_selected(const QPoint &) {}
 	
 signals:
-	void region_selected(QRegion region, selection::select_type s_type);
+	void region_selected(select_type s_type, QRegion region);
 	
 protected:
 	QVBoxLayout *options;
