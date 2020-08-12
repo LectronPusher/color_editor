@@ -15,13 +15,14 @@ public:
 	image_view(QWidget *parent = nullptr);
 	
 public slots:
-	void reset_view_rect(const QRect &rect);
+	void scale_down_to_fit(const QRect &rect);
 	void redraw_rect(const QRect &scene_rect);
 	
 	void zoom_in();
 	void zoom_out();
 	void reset_zoom();
 	
+	void maybe_set_mouse_mode(int id, bool checked = true);
 	void set_mouse_mode(mouse_mode::mode new_mode);
 	
 signals:
@@ -29,9 +30,9 @@ signals:
 	void combine_points(int n);
 	
 protected:
-	void mouseMoveEvent(QMouseEvent *event);
-	void mousePressEvent(QMouseEvent *event);
-	void mouseReleaseEvent(QMouseEvent *event);
+	void mouseMoveEvent(QMouseEvent *event) override;
+	void mousePressEvent(QMouseEvent *event) override;
+	void mouseReleaseEvent(QMouseEvent *event) override;
 	
 private:
 	const qreal scale_factor = 1.2;

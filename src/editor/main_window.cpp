@@ -58,10 +58,7 @@ void main_window::make_major_connections() {
 	connect(view, &image::image_view::combine_points,
 			selection, &select::selection::combine_changes);
 	connect(mouse_mode_group, &QButtonGroup::idToggled,
-			this, [=](int id, bool checked){
-				if (checked)
-					view->set_mouse_mode(static_cast<mouse_mode::mode>(id));
-			});
+			view, &image::image_view::maybe_set_mouse_mode);
 	// selector
 	for (auto selector : *selector_stack) {
 		connect(selector, &select::selector::region_selected,
@@ -85,8 +82,10 @@ void main_window::set_image(const QImage &image) {
 	// TODO break selection undo redo
 	select::selector::set_image(image);
 	update_effect();
-	renderer->selection = selection;
-	view->reset_view_rect(image.rect());
+	const QRect &rect = image.rect();
+	view->setSceneRect(rect);
+	view->scale_down_to_fit(rect);
+	view->redraw_rect(rect);
 }
 
 void main_window::update_effect() {

@@ -9,17 +9,15 @@ image_view::image_view(QWidget *parent)
 	scene()->setBackgroundBrush(Qt::darkGray);
 }
 
-void image_view::reset_view_rect(const QRect &rect) {
+void image_view::scale_down_to_fit(const QRect &rect) {
 	reset_zoom();
-	scene()->setSceneRect(rect);
-	
 	// scale down the image if larger than the viewport, handle scrollbar bug
 	QSize v_size = viewport()->size();
 	if (rect.width() > v_size.width() || rect.height() > v_size.height()) {
 		setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
 		setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
 		
-		fitInView(sceneRect(), Qt::KeepAspectRatio);
+		fitInView(rect, Qt::KeepAspectRatio);
 		
 		setHorizontalScrollBarPolicy(Qt::ScrollBarAsNeeded);
 		setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
@@ -40,6 +38,20 @@ void image_view::zoom_out() {
 
 void image_view::reset_zoom() {
 	setTransform(QTransform());
+}
+
+void image_view::maybe_set_mouse_mode(int id, bool checked) {
+	if (checked) {
+		switch (id) {
+			case mouse_mode::none:
+			case mouse_mode::pan:
+			case mouse_mode::single_point:
+			case mouse_mode::combined_points:
+				set_mouse_mode((mouse_mode::mode)id);
+			default:
+				break;
+		}
+	}
 }
 
 void image_view::set_mouse_mode(mouse_mode::mode new_mode) {
@@ -102,7 +114,6 @@ void image_view::mouseReleaseEvent(QMouseEvent *event) {
 			emit combine_points(movement_count);
 			movement_count = 0;
 			last_position = QPoint();
-			return;
 		}
 	}
 	QGraphicsView::mouseReleaseEvent(event);
