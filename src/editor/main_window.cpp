@@ -1,6 +1,4 @@
 #include "main_window.hpp"
-#include "color/effect_types.hpp"
-#include "select/selector_types.hpp"
 #include "mouse_mode.hpp"
 
 #include <QFileDialog>
@@ -27,9 +25,7 @@ static QToolButton *tool_button_text(const QString &text) {
 }
 
 void main_window::initialize_members() {
-	selection = new select::selection(this);
-	
-	renderer = new image::model_renderer(selection);
+	renderer = new image::model_renderer(cur_selection/*makes a reference*/);
 	
 	view = new image::image_view;
 	view->scene()->addItem(renderer);
@@ -52,60 +48,141 @@ void main_window::initialize_members() {
 }
 
 void main_window::make_major_connections() {
-	// view
-	connect(selection, &select::selection::contents_updated,
-			view, &image::image_view::redraw_rect);
-	connect(view, &image::image_view::combine_points,
-			selection, &select::selection::combine_changes);
 	connect(mouse_mode_group, &QButtonGroup::idToggled,
 			view, &image::image_view::maybe_set_mouse_mode);
-	// selector
 	for (auto selector : *selector_stack) {
-		connect(selector, &select::selector::region_selected,
-				selection, &select::selection::add_region);
 		connect(view, &image::image_view::point_selected,
 				selector, &select::selector::point_selected);
 	}
-	// effect
-	connect(selection, &select::selection::boundary_updated,
-			this, &main_window::update_effect);
 	for (auto effect : *effect_stack) {
 		connect(effect, &color::effect::altered,
 				this, &main_window::update_effect);
 		connect(effect, &color::effect::mode_changed,
 				this, [=](painting_mode::mode m){ renderer->update_mode(m); });
 	}
-	// apply_b
-	connect(apply_b, &QToolButton::clicked, this, &main_window::apply_effect);
+	connect(apply_b, &QToolButton::clicked,
+			this, &main_window::store_current_effect);
+}
+
+void main_window::main_window::connect_selection(select::selection *sel) {
+	connect(sel, &select::selection::contents_updated,
+			view, &image::image_view::redraw_rect);
+	connect(view, &image::image_view::combine_points,
+			sel, &select::selection::combine_changes);
+	for (auto selector : *selector_stack) {
+		connect(selector, &select::selector::region_selected,
+				sel, &select::selection::add_region);
+	}
+	connect(sel, &select::selection::region_added,
+			this, &main_window::clear_undone);
+	connect(sel, &select::selection::boundary_updated,
+			this, &main_window::update_effect);
+}
+
+void main_window::main_window::disconnect_selection(select::selection *sel) {
+	disconnect(sel, &select::selection::contents_updated,
+			view, &image::image_view::redraw_rect);
+	disconnect(view, &image::image_view::combine_points,
+			sel, &select::selection::combine_changes);
+	for (auto selector : *selector_stack) {
+		disconnect(selector, &select::selector::region_selected,
+				sel, &select::selection::add_region);
+	}
+	disconnect(sel, &select::selection::region_added,
+			   this, &main_window::clear_undone);
+	disconnect(sel, &select::selection::boundary_updated,
+			this, &main_window::update_effect);
 }
 
 void main_window::update_effect() {
-	if (selection) {
+	if (cur_selection) {
 		renderer->update_effect(
 			effect_stack->active()->create_effect(
 				renderer->source,
-				selection->region_rect()
+				cur_selection->region_rect()
 			)
 		);
 	}
 }
 
-void main_window::set_image(const QImage &image) {
-	renderer->source = image;
-	// TODO break selection undo redo
-	select::selector::set_image(image);
-	update_effect();
-	const QRect &rect = image.rect();
-	view->setSceneRect(rect);
-	view->scale_down_to_fit(rect);
-	view->redraw_rect(rect);
+void main_window::clear_undone() {
+	// distinct function necessary to call disconnect()
+	future_changes.clear();
 }
 
-void main_window::apply_effect() {
-	QImage image = renderer->source;
-	QPainter painter(&image);
-	renderer->render_effect(&painter, false);
-	set_image(image);
+void main_window::initialize_image(const QImage &image) {
+	initial_image = image.convertToFormat(QImage::Format_ARGB32);
+	past_changes.clear();
+	future_changes.clear();
+	add({editor_change::initial, initial_image, new select::selection(this)});
+}
+
+void main_window::store_current_effect() {
+	if (cur_selection) cur_selection->future_changes.clear();
+	if (!renderer->no_effective_effect())
+		add({editor_change::stored, renderer->source, new select::selection(this)});
+}
+
+void main_window::undo() {
+	// nothing to do if selection == nullptr
+	// note: calling selection->undo has the side effect of undoing
+	if (cur_selection != nullptr && !cur_selection->undo())
+		undo_base<editor_change>::undo();
+}
+
+void main_window::redo() {
+	// still valid if selection nullptr
+	// note: calling selection->redo has the side effect of redoing
+	if (cur_selection == nullptr || !cur_selection->redo())
+		undo_base<editor_change>::redo();
+}
+
+void main_window::apply(const editor_change &chng) {
+	switch (chng.c_type) {
+		case editor_change::initial:
+			set_image(chng.orig);
+			view->setSceneRect(chng.orig.rect());
+			view->scale_down_to_fit(chng.orig.rect());
+			break;
+		case editor_change::stored:
+			{
+				QPainter painter(&renderer->source);
+				renderer->render_effect(&painter, false);
+			}
+			set_image(renderer->source);
+			// if we have a future item, update it with the current image
+			if (!future_changes.empty())
+				future_changes.top().orig = renderer->source;
+	}
+	if (cur_selection)
+		disconnect_selection(cur_selection);
+	cur_selection = chng.sel;
+	connect_selection(cur_selection);
+	update_effect();
+}
+
+void main_window::unapply(const editor_change &chng) {
+	switch (chng.c_type) {
+		case editor_change::initial:
+			// set state back to earlier
+			past_changes.push(std::move(future_changes.top()));
+			future_changes.pop();
+			// quit before undoing, not valid to undo the initial image
+			return;
+			// return, not break
+		case editor_change::stored:
+			set_image(chng.orig);
+	}
+	disconnect_selection(cur_selection);
+	cur_selection = past_changes.top().sel;
+	connect_selection(cur_selection);
+	update_effect();
+}
+
+void main_window::set_image(const QImage &image) {
+	renderer->source = image;
+	select::selector::set_image(image);
+	view->redraw_rect(image.rect());
 }
 
 static QLabel *horizontal_line() {
@@ -152,8 +229,8 @@ QHBoxLayout *main_window::create_image_buttons() {
 	
 	connect(open_b, &QToolButton::clicked, this, [=](){ open_image(); });
 	connect(save_as_b, &QToolButton::clicked, this, &main_window::save_as);
-	connect(undo_b, &QToolButton::clicked, this, [=](){ selection->undo(); });
-	connect(redo_b, &QToolButton::clicked, this, [=](){ selection->redo(); });
+	connect(undo_b, &QToolButton::clicked, this, &main_window::undo);
+	connect(redo_b, &QToolButton::clicked, this, &main_window::redo);
 	connect(zoom_in_b, &QToolButton::clicked, view, &image::image_view::zoom_in);
 	connect(zoom_out_b, &QToolButton::clicked, view, &image::image_view::zoom_out);
 	connect(reset_zoom_b, &QToolButton::clicked, view, &image::image_view::reset_zoom);
@@ -175,45 +252,41 @@ QHBoxLayout *main_window::create_image_buttons() {
 }
 
 void main_window::open_image(QString filepath) {
-	if (modifications_resolved()) {
-		if (filepath.isEmpty()) {
-			filepath = QFileDialog::getOpenFileName(
-				this,
-				"Open Image",
-				previous_file.dir().path(),
-				"Image Files (*.png *.jpg *.bmp)"
-			);
-		}
-		if (!filepath.isEmpty()) {
-			previous_file = QFileInfo(filepath);
-			QImage image(filepath);
-			if (!image.isNull())
-				set_image(image.convertToFormat(QImage::Format_ARGB32));
-		}
+	if (!modifications_resolved()) return;
+	if (filepath.isEmpty()) {
+		filepath = QFileDialog::getOpenFileName(
+			this,
+			"Open Image",
+			previous_file.dir().path(),
+			"Image Files (*.png *.jpg *.bmp)"
+		);
+	}
+	if (!filepath.isEmpty()) {
+		previous_file = QFileInfo(filepath);
+		QImage image(filepath);
+		if (!image.isNull())
+			initialize_image(image);
 	}
 }
 
 void main_window::save_as() {
-	if (!renderer->source.isNull()) {
-		QString filepath = QFileDialog::getSaveFileName(
-			this,
-			"Save As",
-			previous_file.filePath(),
-			"Image Files (*.png *.jpg *.bmp);;All Files (*)"
-		);
-		if (!filepath.isEmpty()) {
-			apply_effect();
-			renderer->source.save(filepath);
-			previous_file = QFileInfo(filepath);
-		}
+	if (renderer->source.isNull()) return;
+	QString filepath = QFileDialog::getSaveFileName(
+		this,
+		"Save As",
+		previous_file.filePath(),
+		"Image Files (*.png *.jpg *.bmp);;All Files (*)"
+	);
+	if (!filepath.isEmpty()) {
+		store_current_effect();
+		renderer->source.save(filepath);
+		previous_file = QFileInfo(filepath);
 	}
 }
 
 bool main_window::modifications_resolved() {
-	if (
-		!renderer->no_effective_effect() ||
-		renderer->source != QImage(previous_file.filePath())
-	) {
+	// whether the image was modified
+	if (!renderer->no_effective_effect() || renderer->source != initial_image) {
 		auto dialog_ans = QMessageBox::warning(
 			this,
 			"Unsaved Changes",
@@ -240,19 +313,19 @@ void main_window::keyPressEvent(QKeyEvent *event) {
 	switch (event->key()) {
 		case Qt::Key_Z:
 			if (mods == Qt::ControlModifier)
-				selection->undo();
+				undo();
 			else if (mods == (Qt::ControlModifier | Qt::ShiftModifier))
-				selection->redo();
+				redo();
 			break;
 		case Qt::Key_Y:
 			if (mods == Qt::ControlModifier)
-				selection->redo();
+				redo();
 			break;
 		case Qt::Key_Undo:
-			selection->undo();
+			undo();
 			break;
 		case Qt::Key_Redo:
-			selection->redo();
+			redo();
 			break;
 		default:
 			break;

@@ -13,7 +13,7 @@ QRect selection::region_rect() const {
 }
 
 bool selection::has_selection() const {
-	return !applied.empty();
+	return !past_changes.empty();
 }
 
 void selection::add_region(select_type s_type, const QRegion &region) {
@@ -25,16 +25,17 @@ void selection::add_region(select_type s_type, const QRegion &region) {
 			add({s_type, region - excluded});
 			break;
 		case remove:
-			if (applied.empty())
+			if (past_changes.empty())
 				return;
 			add({s_type, {region & selected, region & excluded}});
 			break;
 		case clear:
-			if (applied.empty() || (applied.top().s_type == clear))
+			if (past_changes.empty() || (past_changes.top().s_type == clear))
 				return;
 			add({s_type, {selected, excluded}});
 			break;
 	}
+	emit region_added();
 }
 
 void selection::apply(const change &change) {
@@ -89,12 +90,12 @@ void selection::update_combined() {
 }
 
 void selection::combine_changes(int n) {
-	if (applied.empty())
+	if (past_changes.empty())
 		return;
-	change parent = std::move(applied.top());
-	applied.pop();
+	change parent = std::move(past_changes.top());
+	past_changes.pop();
 	for (int i = 1; i < n; ++i) {
-		const change &child = applied.top();
+		const change &child = past_changes.top();
 		switch (parent.s_type) {
 			case select:
 			case exclude:
@@ -105,7 +106,7 @@ void selection::combine_changes(int n) {
 				parent.removed_regions.selected |= child.removed_regions.selected;
 				parent.removed_regions.excluded |= child.removed_regions.excluded;
 		}
-		applied.pop();
+		past_changes.pop();
 	}
-	applied.push(parent);
+	past_changes.push(parent);
 }

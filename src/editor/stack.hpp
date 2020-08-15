@@ -73,7 +73,7 @@ public:
 		std::forward_list<T>::clear();
 		num_elements = 0;
 	}
-	size_t size() {
+	size_t size() const {
 		return num_elements;
 	}
 private:

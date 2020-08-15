@@ -6,10 +6,14 @@
 #include <QObject>
 
 namespace editor {
+
+class main_window;
+
 namespace select {
 
 class selection : public QObject, public undo_base<change> {
 	Q_OBJECT
+	friend main_window; // to clear undo_base::undone when altered
 	
 public:
 	selection(QObject *parent);
@@ -28,6 +32,7 @@ public slots:
 signals:
 	void contents_updated(QRect new_contents_rect);
 	void boundary_updated(QRect new_boundary);
+	void region_added();
 	
 private:
 	QRegion selected;
