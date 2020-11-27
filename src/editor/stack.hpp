@@ -5,16 +5,22 @@
 
 namespace editor {
 
+// forward declaration, see below stack
 template <typename T> class backward_list;
 
-// reimplementing std::stack but with a clear() function
+/* 
+ * this is a very basic reimplementation of std::stack, but with clear()
+ * it's really nothing more, really.
+ * by default it uses backward list for low overhead, but I included 
+ * backward_list_size if you want another easy option that has size()
+ */ 
 template <typename T, typename container = backward_list<T> >
 class stack : public std::stack<T, container> {
 public:
 	void clear() {
 		this->c.clear();
 	}
-	// just so we're clear, here's what a stack interface looks like:
+	// just so we're clear, here's what the stack interface looks like:
 	using std::stack<T, container>::top;
 	using std::stack<T, container>::pop;
 	using std::stack<T, container>::push;
@@ -22,9 +28,14 @@ public:
 }; // stack
 
 
-// std::forward_list is the lowest overhead list in the stl
-// but it doesn't have back(), push_back(), or pop_back() because its a *forward* list
-// well, here's a backwards one that does have that
+/* 
+ * std::forward_list is the lowest overhead list in the stl
+ * but it doesn't have back(), push_back(), or pop_back() because it's a
+ * forward* list. 
+ * well, here's a backwards list that does have those functions
+ * 
+ * it's really just calling the forward_list functions by new names, nothing more
+ */
 template <typename T>
 class backward_list : public std::forward_list<T> {
 public:
@@ -50,7 +61,7 @@ private:
 }; // backward_list
 
 
-// just a bit of overhead if you really need the size of the thing
+// just a bit of overhead if you need an easy size function in your stack
 template <typename T>
 class backward_list_size : public std::forward_list<T> {
 public:

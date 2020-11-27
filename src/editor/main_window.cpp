@@ -11,19 +11,19 @@ main_window::main_window(QWidget *parent) : QWidget(parent) {
 	setWindowTitle("color editor");
 	
 	initialize_members();
+	// note, order doesn't matter for connections and layout
 	make_major_connections();
 	setup_layout();
 	
 	// default so I don't have to manually load an image every time
+	// will fail safely if not in right directory
 	open_image("../data/mantis300.jpg");
 }
 
-static QToolButton *tool_button_text(const QString &text) {
-	auto button = new QToolButton;
-	button->setText(text);
-	return button;
-}
-
+/* a few things in here aren't strcitly *initializing*, but they're still setup
+ * notably adding the renderer to the image_view and adding checkboxes from the
+ * selector_stack to the view
+ */
 void main_window::initialize_members() {
 	renderer = new image::model_renderer(cur_selection/*makes a reference*/);
 	
@@ -44,9 +44,19 @@ void main_window::initialize_members() {
 	effect_stack->add(new color::effect_types::gradient);
 	effect_stack->add(new color::effect_types::pixellate);
 	
-	apply_b = tool_button_text("Save Effect to Image");
+	apply_b = new QToolButton;
+	apply_b->setText("Save Effect to Image");
 }
 
+/* list of connections:
+ * mouse_mode_group idToggled -> view maybe_set_mouse_mode
+ * for each selector:
+ *   view point_selected -> selector point_selected
+ * for each color effect:
+ *   effect altered -> main_window update_effect
+ *   effect mode_changed -> renderer update_mode
+ * apply_b clicked -> main_window store_current_effect
+ */
 void main_window::make_major_connections() {
 	connect(mouse_mode_group, &QButtonGroup::idToggled,
 			view, &image::image_view::maybe_set_mouse_mode);
@@ -64,7 +74,15 @@ void main_window::make_major_connections() {
 			this, &main_window::store_current_effect);
 }
 
-void main_window::main_window::connect_selection(select::selection *sel) {
+/* list of connections:
+ * selection contents_updated -> view redraw_rect
+ * view combine_points -> selection combine_changes
+ * for each selector:
+ *   selector region_selected -> selection add_region
+ * selection region_added -> main_window clear_undone
+ * selection boundary_updated -> main_window update_effect
+ */
+void main_window::connect_selection(select::selection *sel) {
 	connect(sel, &select::selection::contents_updated,
 			view, &image::image_view::redraw_rect);
 	connect(view, &image::image_view::combine_points,
@@ -79,7 +97,7 @@ void main_window::main_window::connect_selection(select::selection *sel) {
 			this, &main_window::update_effect);
 }
 
-void main_window::main_window::disconnect_selection(select::selection *sel) {
+void main_window::disconnect_selection(select::selection *sel) {
 	disconnect(sel, &select::selection::contents_updated,
 			view, &image::image_view::redraw_rect);
 	disconnect(view, &image::image_view::combine_points,
@@ -94,6 +112,7 @@ void main_window::main_window::disconnect_selection(select::selection *sel) {
 			this, &main_window::update_effect);
 }
 
+// I hate the formatting here, but I can't get it better with 80 character lines
 void main_window::update_effect() {
 	if (cur_selection) {
 		renderer->update_effect(
@@ -105,8 +124,8 @@ void main_window::update_effect() {
 	}
 }
 
+// having a distinct function is necessary to call disconnect()
 void main_window::clear_undone() {
-	// distinct function necessary to call disconnect()
 	future_changes.clear();
 }
 
@@ -117,42 +136,60 @@ void main_window::initialize_image(const QImage &image) {
 	add({editor_change::initial, initial_image, new select::selection(this)});
 }
 
+// does not render the effect, that must be done in apply due to redo() existing
 void main_window::store_current_effect() {
 	if (cur_selection) cur_selection->future_changes.clear();
 	if (!renderer->no_effective_effect())
-		add({editor_change::stored, renderer->source, new select::selection(this)});
+		add({editor_change::altered, renderer->source, new select::selection(this)});
 }
 
+/* these two functions seem weird, but it's easy to understand if you remember
+ * that we have nested undos
+ * if we can un/redo the selection first, then we've done an undo action and
+ * don't need to un/redo main_window
+ * if we can't, then we do need to un/redo in main_window
+ */
 void main_window::undo() {
 	// nothing to do if selection == nullptr
-	// note: calling selection->undo has the side effect of undoing
+	// calling selection->undo has the side effect of undoing if true
 	if (cur_selection != nullptr && !cur_selection->undo())
 		undo_base<editor_change>::undo();
 }
 
 void main_window::redo() {
-	// still valid if selection nullptr
-	// note: calling selection->redo has the side effect of redoing
+	// still valid if selection nullptr, will be the initial image
+	// calling selection->redo has the side effect of redoing if true
 	if (cur_selection == nullptr || !cur_selection->redo())
 		undo_base<editor_change>::redo();
 }
 
+/* apply and unapply are long, ugly functions; break them into three parts:
+ * 1. we check for the type of editor_change, the state of the editor will be
+ *    different for intial vs altered
+ * 2. set the image to be either the image in chng or the image in renderer with
+ *    the current effect applied to it
+ * 3. disconnect the old selection and reconnect the new one
+ * 
+ * apply also sets the next future change image to the current image, which 
+ * allows changes to propagate to the future after many redos
+ * unapply also won't allow an initial image to turn into nothing
+ */
 void main_window::apply(const editor_change &chng) {
 	switch (chng.c_type) {
 		case editor_change::initial:
-			set_image(chng.orig);
-			view->setSceneRect(chng.orig.rect());
-			view->scale_down_to_fit(chng.orig.rect());
+			set_image(chng.img);
+			view->setSceneRect(chng.img.rect());
+			view->scale_down_to_fit(chng.img.rect());
 			break;
-		case editor_change::stored:
-			{
+		case editor_change::altered:
+			{ // the new scope destroys the painter when done
 				QPainter painter(&renderer->source);
 				renderer->render_effect(&painter, false);
 			}
 			set_image(renderer->source);
 			// if we have a future item, update it with the current image
 			if (!future_changes.empty())
-				future_changes.top().orig = renderer->source;
+				future_changes.top().img = renderer->source;
 	}
 	if (cur_selection)
 		disconnect_selection(cur_selection);
@@ -164,14 +201,14 @@ void main_window::apply(const editor_change &chng) {
 void main_window::unapply(const editor_change &chng) {
 	switch (chng.c_type) {
 		case editor_change::initial:
-			// set state back to earlier
+			// reset the state (undo_base moves these before calling apply)
 			past_changes.push(std::move(future_changes.top()));
 			future_changes.pop();
 			// quit before undoing, not valid to undo the initial image
 			return;
 			// return, not break
-		case editor_change::stored:
-			set_image(chng.orig);
+		case editor_change::altered:
+			set_image(chng.img);
 	}
 	disconnect_selection(cur_selection);
 	cur_selection = past_changes.top().sel;
@@ -179,6 +216,9 @@ void main_window::unapply(const editor_change &chng) {
 	update_effect();
 }
 
+/* these are the only two places the image is stored, they need to be updated
+ * when the editor_change img changes
+ */
 void main_window::set_image(const QImage &image) {
 	renderer->source = image;
 	select::selector::set_image(image);
@@ -195,7 +235,7 @@ static QLabel *horizontal_line() {
 
 void main_window::setup_layout() {
 	auto image_panel = new QVBoxLayout;
-	QHBoxLayout *image_buttons = create_image_buttons();
+	QHBoxLayout *image_buttons = create_menubar_buttons();
 	image_panel->addLayout(image_buttons);
 	image_panel->setAlignment(image_buttons, Qt::AlignLeft);
 	image_panel->addWidget(view);
@@ -218,7 +258,14 @@ void main_window::setup_layout() {
 	setLayout(all_panels);
 }
 
-QHBoxLayout *main_window::create_image_buttons() {
+// just a function to reduce code duplication when creating buttons
+static QToolButton *tool_button_text(const QString &text) {
+	auto button = new QToolButton;
+	button->setText(text);
+	return button;
+}
+
+QHBoxLayout *main_window::create_menubar_buttons() {
 	auto open_b = tool_button_text("Open");
 	auto save_as_b = tool_button_text("Save As");
 	auto undo_b = tool_button_text("Undo");
@@ -285,8 +332,10 @@ void main_window::save_as() {
 }
 
 bool main_window::modifications_resolved() {
-	// whether the image was modified
-	if (!renderer->no_effective_effect() || renderer->source != initial_image) {
+	// no modifications if true
+	if (renderer->no_effective_effect() && renderer->source == initial_image) {
+		return true;
+	} else {
 		auto dialog_ans = QMessageBox::warning(
 			this,
 			"Unsaved Changes",
@@ -297,8 +346,8 @@ bool main_window::modifications_resolved() {
 			return false;
 		else if (dialog_ans == QMessageBox::Save)
 			save_as();
+		return true;
 	}
-	return true;
 }
 
 void main_window::closeEvent(QCloseEvent *event) {
