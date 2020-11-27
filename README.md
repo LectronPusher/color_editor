@@ -15,4 +15,3 @@ There are three Selectors and three Color Effects to choose from:
 - Single Color: a single color, the user picks one, also offers an opacity slider and the option to overlay the effect on the image or to replace the selected points with the chosen color (only matters if transparent)
 - Gradient: offers a horizontal or vertical gradient between two colors
 - Pixellate: pixellates the image by sampling colors and painting them over their neighboring pixels, the user can choose the size of the pixels
-
