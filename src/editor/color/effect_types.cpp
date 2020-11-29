@@ -3,41 +3,35 @@
 #include <QHBoxLayout>
 #include <QToolButton>
 #include <QLabel>
-#include <QLinearGradient>
 #include <QSlider>
-#include <QSpinBox>
-#include <QPainter>
 
-Q_DECLARE_METATYPE(editor::painting_mode::mode);
-
-using namespace editor::color::effect_types;
+using namespace editor::color;
 
 // single_color
-single_color::single_color() : effect("Single Color") {
-	stored_color = new color_label(Qt::red);
-	stored_color->enable_transparency();
+single_color_widget::single_color_widget() : effect_widget("Single Color") {
+	stored_color = new color_label(Qt::red, true);
+	paint_mode_box = new QComboBox;
 	auto spinbox = new QSpinBox;
 	spinbox->setRange(0, 255);
 	auto slider = new QSlider(Qt::Horizontal);
-	slider->setMinimum(0);
-	slider->setMaximum(255);
-	auto mode_box = new QComboBox;
+	slider->setRange(0, 255);
 	
-	connect(stored_color, &color_label::color_changed, this, &effect::altered);
+	connect(stored_color, &color_label::color_changed,
+			this, [=](){ emit altered(get_state()); });
 	connect(stored_color, &color_label::color_changed,
 			this, [slider](const QColor &c){ slider->setValue(c.alpha()); });
-	connect(slider, &QSlider::valueChanged, stored_color, &color_label::set_alpha);
-	connect(slider, &QSlider::valueChanged, spinbox, &QSpinBox::setValue);
-	auto value_changed = QOverload<int>::of(&QSpinBox::valueChanged);
-	connect(spinbox, value_changed, slider, &QSlider::setValue);
-	auto index_changed = QOverload<int>::of(&QComboBox::currentIndexChanged);
-	connect(mode_box, index_changed, this, [this, mode_box](){
-		set_mode(mode_box->currentData().value<painting_mode::mode>());
-	});
+	connect(slider, &QSlider::valueChanged,
+			stored_color, &color_label::set_alpha);
+	connect(paint_mode_box, QOverload<int>::of(&QComboBox::currentIndexChanged),
+			this, [=](){ emit altered(get_state()); });
+	connect(slider, &QSlider::valueChanged,
+			spinbox, &QSpinBox::setValue);
+	connect(spinbox, QOverload<int>::of(&QSpinBox::valueChanged),
+			slider, &QSlider::setValue);
 	
-	// add the values after the connections to update others
-	mode_box->addItem("Overlay", painting_mode::over);
-	mode_box->addItem("Replace", painting_mode::replace);
+	// set the values after the connections to update other components
+	paint_mode_box->addItem("Overlay", effect_state::over);
+	paint_mode_box->addItem("Replace", effect_state::replace);
 	slider->setValue(255);
 	
 	auto hbox = new QHBoxLayout;
@@ -50,35 +44,53 @@ single_color::single_color() : effect("Single Color") {
 	hbox->addWidget(spinbox);
 	options->addLayout(hbox);
 	options->addWidget(slider);
-	options->addWidget(mode_box);
+	options->addWidget(paint_mode_box);
 	options->addStretch(1);
 }
 
-QImage single_color::create_effect(const QImage &image, const QRect &) {
-	QImage effect(image.size(), QImage::Format_ARGB32);
-	effect.fill(stored_color->color());
-	return effect;
+void single_color_widget::load_state(effect_state &new_state) {
+	if (new_state.s_type == effect_state::single_color) {
+		stored_color->set_color(new_state.s_c.stored_color);
+		
+		for (int index=0; index < paint_mode_box->count(); ++index) {
+			if (paint_mode_box->currentData().value<effect_state::paint_mode>()
+				== new_state.p_mode) {
+				paint_mode_box->setCurrentIndex(index);
+			}
+		}
+	}
+}
+
+effect_state single_color_widget::get_state() {
+	single_color_state s_c = {stored_color->color()};
+	return {
+		effect_state::single_color,
+		s_c,
+		paint_mode_box->currentData().value<effect_state::paint_mode>()
+	};
 }
 // end single_color
 
 
 // gradient
-gradient::gradient() : effect("Gradient") {
+gradient_widget::gradient_widget() : effect_widget("Gradient") {
 	color_1 = new color_label(Qt::cyan);
 	color_2 = new color_label(Qt::yellow);
-	orient_box = new QComboBox;
-	orient_box->addItem("Horizontal", true);
-	orient_box->addItem("Vertical", false);
+	direction_box = new QComboBox;
+	direction_box->addItem("Horizontal", true);
+	direction_box->addItem("Vertical", false);
 	auto swap_b = new QToolButton;
 	swap_b->setText("Swap colors");
 	
-	connect(color_1, &color_label::color_changed, this, &effect::altered);
-	connect(color_2, &color_label::color_changed, this, &effect::altered);
-	connect(orient_box, QOverload<int>::of(&QComboBox::currentIndexChanged),
-			this, &effect::altered);
-	connect(swap_b, &QToolButton::clicked, this, &gradient::swap_colors);
+	connect(color_1, &color_label::color_changed,
+			this, [=](){ emit altered(get_state()); });
+	connect(color_2, &color_label::color_changed,
+			this, [=](){ emit altered(get_state()); });
+	connect(direction_box, QOverload<int>::of(&QComboBox::currentIndexChanged),
+			this, [=](){ emit altered(get_state()); });
+	connect(swap_b, &QToolButton::clicked, this, &gradient_widget::swap_colors);
 	
-	options->addWidget(orient_box);
+	options->addWidget(direction_box);
 	auto hbox = new QHBoxLayout;
 	hbox->addWidget(new QLabel("Color 1:"));
 	hbox->addWidget(color_1);
@@ -92,44 +104,42 @@ gradient::gradient() : effect("Gradient") {
 	options->addStretch(1);
 }
 
-QImage gradient::create_effect(const QImage &image, const QRect &boundary) {
-	QImage effect(image.size(), QImage::Format_ARGB32);
-	QPainter painter(&effect);
-	painter.fillRect(image.rect(), create_gradient(boundary));
-	return effect;
-}
-
-void gradient::swap_colors() {
+void gradient_widget::swap_colors() {
 	QColor temp = color_1->color();
 	color_1->set_color(color_2->color());
 	color_2->set_color(temp);
 }
 
-QGradient gradient::create_gradient(const QRect &rect) {
-	QLinearGradient grad;
-	grad.setColorAt(0, color_1->color());
-	grad.setColorAt(1, color_2->color());
-	grad.setStart(rect.left(), rect.top());
-	
-	bool horizontal = orient_box->currentData().value<bool>();
-	if (horizontal)
-		grad.setFinalStop(rect.right(), rect.top());
-	else
-		grad.setFinalStop(rect.left(), rect.bottom());
-	
-	return grad;
+void gradient_widget::load_state(effect_state &new_state) {
+	if (new_state.s_type == effect_state::gradient) {
+		color_1->set_color(new_state.g.color_1);
+		color_2->set_color(new_state.g.color_2);
+		if (new_state.g.direction == gradient_state::horizontal)
+			direction_box->setCurrentText("Horizontal");
+		else
+			direction_box->setCurrentText("Vertical");
+	}
+}
+
+effect_state gradient_widget::get_state() {
+	gradient_state g;
+	g.color_1 = color_1->color();
+	g.color_2 = color_2->color();
+	bool hzon = direction_box->currentData().value<bool>();
+	g.direction = (hzon) ? gradient_state::horizontal : gradient_state::vertical;
+	return {effect_state::gradient, g};
 }
 // end gradient
 
 
 // pixellate
-pixellate::pixellate() : effect("Pixellate") {
+pixellate_widget::pixellate_widget() : effect_widget("Pixellate") {
 	pixel_size = new QSpinBox;
 	pixel_size->setRange(1, 5000);
 	pixel_size->setValue(5);
 	
 	connect(pixel_size, QOverload<int>::of(&QSpinBox::valueChanged),
-			this, &effect::altered);
+			this, [=](){ emit altered(get_state()); });
 	
 	auto hbox = new QHBoxLayout;
 	hbox->addWidget(new QLabel("Pixel Size:"));
@@ -139,53 +149,13 @@ pixellate::pixellate() : effect("Pixellate") {
 	options->addStretch(1);
 }
 
-QImage pixellate::create_effect(const QImage &image, const QRect &) {
-	if (pixel_size->value() == 1)
-		return image;
-	
-	QImage effect(image.size(), QImage::Format_ARGB32);
-	QPainter painter(&effect);
-	painter.setCompositionMode(QPainter::CompositionMode_Source);
-	pixellate_image(&painter, image);
-	return effect;
+void pixellate_widget::load_state(effect_state &new_state) {
+	if (new_state.s_type == effect_state::pixellate)
+		pixel_size->setValue(new_state.p.pixel_size);
 }
 
-void pixellate::pixellate_image(QPainter *painter, const QImage &source) {
-	int size = pixel_size->value();
-	int h_s = (size - 1) / 2; // half of size (matches create_rect)
-	int width = source.width();
-	int height = source.height();
-	
-	// fill main portion of image
-	for (int row = h_s; row < width; row += size) {
-		for (int col = h_s; col < height; col += size) {
-			QPoint point(row, col);
-			painter->fillRect(create_rect(point), source.pixelColor(point));
-		}
-	}
-	// fill remaining edges and bottom right corner
-	int width_mod = (width % size <= h_s) ? width % size : 0;
-	int height_mod = (height % size <= h_s) ? height % size : 0;
-	QRect right(width - width_mod, 0, width_mod, height);
-	QRect bottom(0, height - height_mod, width, height_mod);
-	// fill right
-	for (int col = h_s; col < height; col += size) {
-		QPoint point(width - 1, col);
-		painter->fillRect(right & create_rect(point), source.pixelColor(point));
-	}
-	// fill bottom
-	for (int row = h_s; row < width; row += size) {
-		QPoint point(row, height - 1);
-		painter->fillRect(bottom & create_rect(point), source.pixelColor(point));
-	}
-	// fill corner
-	painter->fillRect(right & bottom, source.pixelColor(width - 1, height - 1));
-}
-
-QRect pixellate::create_rect(const QPoint &point) {
-	int s = pixel_size->value();
-	// make point center if odd, top left of central square if even
-	int h_s = (s - 1) / 2;
-	return {point - QPoint(h_s, h_s), QSize(s, s)};
+effect_state pixellate_widget::get_state() {
+	pixellate_state p = {pixel_size->value()};
+	return {effect_state::pixellate, p};
 }
 // end pixellate

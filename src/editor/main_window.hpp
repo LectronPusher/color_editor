@@ -2,8 +2,8 @@
 
 #include "undo_base.hpp"
 #include "select/selection.hpp"
-#include "image/image_view.hpp"
 #include "image/model_renderer.hpp"
+#include "image/image_view.hpp"
 #include "widget_stack.hpp"
 #include "color/effect_types.hpp"
 #include "select/selector_types.hpp"
@@ -20,30 +20,33 @@
 namespace editor {
 
 /* stores a change to the image in the editor, selections are tied to images
- * a change either moves between images and selections, or changes what's 
- * been selected
+ * a change either moves between images and selections, or changes what's been
+ * selected
  * each selection stores its own undo list, so we have a nesting effect
  * going on, main_window declares its own un/redo functions because of this
  */
 struct editor_change {
-	// whether img came from open_image() or is now altered
+	// whether img came from open_image() or was altered from a previous image
 	enum change_type {initial, altered} c_type;
 	// the original image for this change
 	QImage img;
 	// the selection of points on the image, stores an undo list and is heavily
 	// connected to main_window and its member variables
+	// TODO memory leak: selections aren't getting deleted when changes are cleared
+	// but when main_window is destroyed because main_window is their QObject parent
+	// technically not undefined behavior, but not the behavior I want
 	select::selection *sel;
 }; // editor_change
 
-
 /* 
  * The main_window class, it does things that require full knowledge of every
- * component in the color_editor, these are listed below. main_window inherits 
- * from QWidget because GUI, and undo_base for simple undoing
+ * component in the color_editor, these are listed below. main_window inherits
+ * from QWidget because GUI, and undo_base for undoing
  * - holds the overall GUI layout, including a rudimentary menubar
- * - creates and facilitates the connections between the selection, image view,
- * selectors, and color effect components
- * - updates the image via the model_renderer when a change is made
+ * - holds a pointer the current selection and the current source image, both of
+ *   which are also stored as references in the model renderer
+ * - creates and facilitates the connections between the renderer, selection,
+ *   image view, selectors, and color effect components
  * - manages undoing and the nested undoing of individual selections
  * - handles image file IO and keeps track of the state of image modifications
  * - manages keybindings for undo and redo
@@ -72,14 +75,6 @@ public slots:
 	 */
 	void undo();
 	void redo();
-	
-	/* gets the active color effect and applies it to the image through the
-	 * renderer
-	 * think of this as a refresh button, it will update the display to whatever
-	 * it currently should be
-	 * only requires that members have been initialized and connections made
-	 */
-	void update_effect();
 	
 	/* calls future_changes.clear() that's it
 	 * the reason this is here is so that I can connect and disconnect it to
@@ -112,38 +107,49 @@ protected:
 	
 private:
 	/* the selection at undo_base.past_changes.top()
-	 * renderer will hold a reference to this pointer and change its selection
-	 * as this changes
 	 * the selection holds its own undo stack and is very interconnected with
-	 * main_window and its member functions
+	 * main_window and its other member variables
+	 * renderer will hold a reference to this pointer when initialized
 	 */
 	select::selection *cur_selection = nullptr;
-	// QGraphicsItem placed inside view, renders the image when given an effect
+	/* the current source image to be painted on
+	 * probably the image at undo_base.past_changes.top() but honestly I didn't
+	 * design it that way and haven't checked that that invariant holds
+	 * I did design cur_selection that way
+	 * renderer will hold a reference to this image when initialized
+	 */
+	QImage source_img;
+	/* QGraphicsItem held inside the image_view, renders the image with the
+	 * current effect applied to it
+	 * also a QObject for slot connections
+	 * holds a reference to cur_selection and source_img, holds the only copies
+	 * of the current effect and the effect_state
+	 */
 	image::model_renderer *renderer;
-	// inherits from QGraphicsView to hold renderer and allow zooming
-	// also handles all mouse input and selection of points via connections to
-	// the selectors
+	/* inherits from QGraphicsView to hold renderer and allow zooming
+	 * also handles all mouse input and selection of points via connections to
+	 * the selectors and cur_selection
+	 * holds renderer and is called for some redraw events because of efficiency
+	 */
 	image::image_view *view;
-	// communicates the mouse mode from various checkboxes to view, and makes
-	// the checkboxes update with one another
+	/* communicates the mouse mode from various checkboxes to view, and makes
+	 * the checkboxes update with one another
+	 * the checkboxes are found in the menubar and in some selectors
+	 */
 	QButtonGroup *mouse_mode_group;
 	/* selectors, these commnicate with view when points are selected to create 
 	 * selection regions, they can also spontaneously select regions
 	 * the widget stack holds all of them, but only the active() one can select
 	 */
 	widget_stack<select::selector *> *selector_stack;
-	/* color effects, these are the effects that get applied to the selection
-	 * they don't directly connect to signals from selection, but instead
-	 * are updated therough main_window functions that are connected to signals
-	 * they can also be changed by the user and will tell main_window to redraw
-	 * the image
-	 * the widget stack holds all of them, and I use hide/show events to determine
-	 * when they've changed
-	 * TODO better solution than hide/show events
+	/* color effect widgets, these handle the GUI portion of color effects, they
+	 * emit a single altered when their state updates, this gets passed to the
+	 * renderer who handles actually creating the effects from the effect_state
 	 */
-	widget_stack<color::effect *> *effect_stack;
-	// calls store_current_effect() when clicked, see below
-	// not in the menubar, so not created in create_menubar_buttons()
+	widget_stack<color::effect_widget *> *effect_stack;
+	/* calls store_current_effect() when clicked, see below
+	 * not in the menubar, so not created in create_menubar_buttons()
+	 */
 	QToolButton *apply_b;
 	
 	// which file was previously open, starts at the home directory 
@@ -158,7 +164,6 @@ private:
 	 * adds the renderer to the image_view's scene
 	 */
 	void initialize_members();
-	
 	/* this function makes one-time connections, mostly between things that
 	 * change state, and whose state changes require updates to other things
 	 * very vague, yes, but honestly its decently somewhat descriptive
@@ -191,10 +196,9 @@ private:
 	 * list of connections:
 	 * mouse_mode_group idToggled -> view maybe_set_mouse_mode
 	 * for each selector:
-	 * view point_selected -> selector point_selected
+	 *   view point_selected -> selector point_selected
 	 * for each color effect:
-	 * effect altered -> main_window update_effect
-	 * effect mode_changed -> renderer update_mode
+	 *   effect altered -> renderer update_effect_state
 	 * apply_b clicked -> main_window store_current_effect
 	 */
 	void make_major_connections();
@@ -209,19 +213,18 @@ private:
 	 * for each selector:
 	 *   selector region_selected -> selection add_region
 	 * selection region_added -> main_window clear_undone
-	 * selection boundary_updated -> main_window update_effect
-	*
+	 * selection boundary_updated -> renderer create_effect_and_render
 	 */
 	void connect_selection(select::selection *sel);
 	void disconnect_selection(select::selection *sel);
 	
 	/* sets up the layout of the GUI, includes menubar buttons
-	 * must be called after items are initialized
-	 * but can be called before connections made
+	 * must be called after items are initialized and after connections made
+	 * due to first time show events sending signals
 	 */
 	void setup_layout();
-	/* just separates a lot of code that creates the menubar buttons and
-	 * connections from setup_layout
+	/* just separates a lot of code that creates the menubar buttons and their
+	 * connections from setup_layout()
 	 */
 	QHBoxLayout *create_menubar_buttons();
 	

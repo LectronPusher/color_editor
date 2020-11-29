@@ -51,7 +51,7 @@ public:
 		box->addItem(name);
 	}
 	
-	// add a new item and deduce its name using QWidget::name()
+	// add a new item and deduce its name using a public name() function
 	void add(T new_item) {
 		add(new_item, new_item->name());
 	}

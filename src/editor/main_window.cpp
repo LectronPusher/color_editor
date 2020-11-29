@@ -10,8 +10,8 @@ using namespace editor;
 main_window::main_window(QWidget *parent) : QWidget(parent) {
 	setWindowTitle("color editor");
 	
+	// order matters due to effect_widget show events sending the altered signal
 	initialize_members();
-	// note, order doesn't matter for connections and layout
 	make_major_connections();
 	setup_layout();
 	
@@ -25,7 +25,9 @@ main_window::main_window(QWidget *parent) : QWidget(parent) {
  * selector_stack to the view
  */
 void main_window::initialize_members() {
-	renderer = new image::model_renderer(cur_selection/*makes a reference*/);
+	// note that renderer makes a reference of cur_selection itself, not what
+	// cur_selection points at
+	renderer = new image::model_renderer(cur_selection, source_img);
 	
 	view = new image::image_view;
 	view->scene()->addItem(renderer);
@@ -39,10 +41,13 @@ void main_window::initialize_members() {
 	for (auto selector : *selector_stack)
 		selector->add_checkboxes_to_group(mouse_mode_group);
 	
-	effect_stack = new widget_stack<color::effect *>;
-	effect_stack->add(new color::effect_types::single_color);
-	effect_stack->add(new color::effect_types::gradient);
-	effect_stack->add(new color::effect_types::pixellate);
+	effect_stack = new widget_stack<color::effect_widget *>;
+	effect_stack->add(new color::single_color_widget);
+	effect_stack->add(new color::gradient_widget);
+	effect_stack->add(new color::pixellate_widget);
+	
+	color::effect_state new_state = effect_stack->active()->get_state();
+	renderer->update_effect_state(new_state);
 	
 	apply_b = new QToolButton;
 	apply_b->setText("Save Effect to Image");
@@ -53,8 +58,7 @@ void main_window::initialize_members() {
  * for each selector:
  *   view point_selected -> selector point_selected
  * for each color effect:
- *   effect altered -> main_window update_effect
- *   effect mode_changed -> renderer update_mode
+ *   effect altered -> renderer update_effect_state
  * apply_b clicked -> main_window store_current_effect
  */
 void main_window::make_major_connections() {
@@ -65,10 +69,8 @@ void main_window::make_major_connections() {
 				selector, &select::selector::point_selected);
 	}
 	for (auto effect : *effect_stack) {
-		connect(effect, &color::effect::altered,
-				this, &main_window::update_effect);
-		connect(effect, &color::effect::mode_changed,
-				this, [=](painting_mode::mode m){ renderer->update_mode(m); });
+		connect(effect, &color::effect_widget::altered,
+			renderer, &image::model_renderer::update_effect_state);
 	}
 	connect(apply_b, &QToolButton::clicked,
 			this, &main_window::store_current_effect);
@@ -80,7 +82,7 @@ void main_window::make_major_connections() {
  * for each selector:
  *   selector region_selected -> selection add_region
  * selection region_added -> main_window clear_undone
- * selection boundary_updated -> main_window update_effect
+ * selection boundary_updated -> renderer create_effect_and_render
  */
 void main_window::connect_selection(select::selection *sel) {
 	connect(sel, &select::selection::contents_updated,
@@ -94,7 +96,7 @@ void main_window::connect_selection(select::selection *sel) {
 	connect(sel, &select::selection::region_added,
 			this, &main_window::clear_undone);
 	connect(sel, &select::selection::boundary_updated,
-			this, &main_window::update_effect);
+			renderer, &image::model_renderer::create_effect_and_render);
 }
 
 void main_window::disconnect_selection(select::selection *sel) {
@@ -109,19 +111,7 @@ void main_window::disconnect_selection(select::selection *sel) {
 	disconnect(sel, &select::selection::region_added,
 			   this, &main_window::clear_undone);
 	disconnect(sel, &select::selection::boundary_updated,
-			this, &main_window::update_effect);
-}
-
-// I hate the formatting here, but I can't get it better with 80 character lines
-void main_window::update_effect() {
-	if (cur_selection) {
-		renderer->update_effect(
-			effect_stack->active()->create_effect(
-				renderer->source,
-				cur_selection->region_rect()
-			)
-		);
-	}
+			renderer, &image::model_renderer::create_effect_and_render);
 }
 
 // having a distinct function is necessary to call disconnect()
@@ -140,7 +130,7 @@ void main_window::initialize_image(const QImage &image) {
 void main_window::store_current_effect() {
 	if (cur_selection) cur_selection->future_changes.clear();
 	if (!renderer->no_effective_effect())
-		add({editor_change::altered, renderer->source, new select::selection(this)});
+		add({editor_change::altered, source_img, new select::selection(this)});
 }
 
 /* these two functions seem weird, but it's easy to understand if you remember
@@ -183,19 +173,19 @@ void main_window::apply(const editor_change &chng) {
 			break;
 		case editor_change::altered:
 			{ // the new scope destroys the painter when done
-				QPainter painter(&renderer->source);
+				QPainter painter(&source_img);
 				renderer->render_effect(&painter, false);
 			}
-			set_image(renderer->source);
+			set_image(source_img);
 			// if we have a future item, update it with the current image
 			if (!future_changes.empty())
-				future_changes.top().img = renderer->source;
+				future_changes.top().img = source_img;
 	}
 	if (cur_selection)
 		disconnect_selection(cur_selection);
 	cur_selection = chng.sel;
 	connect_selection(cur_selection);
-	update_effect();
+	renderer->create_effect_and_render();
 }
 
 void main_window::unapply(const editor_change &chng) {
@@ -213,14 +203,14 @@ void main_window::unapply(const editor_change &chng) {
 	disconnect_selection(cur_selection);
 	cur_selection = past_changes.top().sel;
 	connect_selection(cur_selection);
-	update_effect();
+	renderer->create_effect_and_render();
 }
 
 /* these are the only two places the image is stored, they need to be updated
  * when the editor_change img changes
  */
 void main_window::set_image(const QImage &image) {
-	renderer->source = image;
+	source_img = image;
 	select::selector::set_image(image);
 	view->redraw_rect(image.rect());
 }
@@ -317,7 +307,7 @@ void main_window::open_image(QString filepath) {
 }
 
 void main_window::save_as() {
-	if (renderer->source.isNull()) return;
+	if (source_img.isNull()) return;
 	QString filepath = QFileDialog::getSaveFileName(
 		this,
 		"Save As",
@@ -326,14 +316,14 @@ void main_window::save_as() {
 	);
 	if (!filepath.isEmpty()) {
 		store_current_effect();
-		renderer->source.save(filepath);
+		source_img.save(filepath);
 		previous_file = QFileInfo(filepath);
 	}
 }
 
 bool main_window::modifications_resolved() {
 	// no modifications if true
-	if (renderer->no_effective_effect() && renderer->source == initial_image) {
+	if (renderer->no_effective_effect() && source_img == initial_image) {
 		return true;
 	} else {
 		auto dialog_ans = QMessageBox::warning(

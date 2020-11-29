@@ -4,8 +4,10 @@
 
 using namespace editor::color;
 
-color_label::color_label(QColor starting_color, QWidget *parent)
-: QFrame(parent), fill_color(starting_color) {
+color_label::color_label(QColor starting_color, bool allow_transparency,
+						 bool allow_interaction, QWidget *parent)
+: QFrame(parent), fill_color(starting_color),
+can_be_transparent(allow_transparency), is_interactive(allow_interaction){
 	QWidget::resize(25, 25);
 	setFrameStyle(QFrame::Panel | QFrame::Sunken);
 	setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
@@ -19,20 +21,12 @@ QColor color_label::color() const {
 	return fill_color;
 }
 
-void color_label::disable_interaction() {
-	is_interactive = false;
-}
-
-void color_label::enable_transparency() {
-	can_be_transparent = true;
-}
-
 void color_label::set_color(const QColor &new_color) {
 	if (new_color.isValid() && fill_color != new_color) {
 		fill_color = new_color;
 		if (!can_be_transparent)
 			fill_color.setAlpha(255);
-		QWidget::update();
+		QWidget::update(); // do a redraw
 		emit color_changed(fill_color);
 	}
 }
@@ -52,13 +46,14 @@ void color_label::paintEvent(QPaintEvent *event) {
 
 void color_label::hideEvent(QHideEvent *event) {
 	if (dialog)
-		dialog->QDialog::done(0);
+		dialog->QDialog::done(1);
 	QFrame::hideEvent(event);
 }
 
-void color_label::mousePressEvent(QMouseEvent *) {
+void color_label::mousePressEvent(QMouseEvent *event) {
 	if (is_interactive && dialog == nullptr)
 		open_dialog();
+	QFrame::mousePressEvent(event);
 }
 
 void color_label::open_dialog() {
@@ -68,8 +63,12 @@ void color_label::open_dialog() {
 	if (can_be_transparent)
 		dialog->setOption(QColorDialog::ShowAlphaChannel);
 	
-	connect(dialog, &QColorDialog::currentColorChanged, this, &color_label::set_color);
-	connect(this, &color_label::color_changed, dialog, &QColorDialog::setCurrentColor);
+	connect(dialog, &QColorDialog::currentColorChanged,
+			this, &color_label::set_color);
+	connect(this, &color_label::color_changed,
+			dialog, &QColorDialog::setCurrentColor);
+	// connecting to finished works, but connecting to destroyed doesn't, weird
+	connect(dialog, &QColorDialog::finished, this, [=](){dialog = nullptr;});
 	
 	dialog->show();
 }

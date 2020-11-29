@@ -1,7 +1,8 @@
 #pragma once
 
 #include "../select/selection.hpp"
-#include "../painting_mode.hpp"
+#include "../color/effect_state.hpp"
+#include "../color/create_effect.hpp"
 
 #include <QObject>
 #include <QGraphicsItem>
@@ -11,24 +12,26 @@
 namespace editor{
 namespace image {
 
-class model_renderer : public QGraphicsItem {
+class model_renderer : public QGraphicsItem, public QObject {
 public:
-	model_renderer(select::selection *&sel);
+	model_renderer(select::selection *&sel, QImage &img);
 	
 	QRectF boundingRect() const override;
-	#define unused_args const QStyleOptionGraphicsItem *, QWidget *
-	void paint(QPainter *painter, unused_args) override;
+	void paint(QPainter *painter, const QStyleOptionGraphicsItem *,
+			   QWidget *) override;
 	
 	void render_effect(QPainter *painter, bool use_background);
 	bool no_effective_effect();
 	
-	void update_effect(const QImage &new_effect);
-	void update_mode(painting_mode::mode new_mode);
+public slots:
+	void update_effect_state(const color::effect_state &new_state);
+	void create_effect_and_render();
 	
-	QImage source;
+private:
 	select::selection *&selection;
+	QImage &source_img;
+	color::effect_state eff_state;
 	QImage effect;
-	painting_mode::mode mode;
 	
 }; // model_renderer
 

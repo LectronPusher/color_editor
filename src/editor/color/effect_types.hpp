@@ -1,66 +1,63 @@
 #pragma once
 
-#include "effect.hpp"
+#include "effect_widget.hpp"
 #include "color_label.hpp"
 
 #include <QComboBox>
-#include <QGradient>
 #include <QSpinBox>
-#include <QPainter>
+
+// used by single_color_widget paint_mode_box
+Q_DECLARE_METATYPE(editor::color::effect_state::paint_mode);
 
 namespace editor {
 namespace color {
-namespace effect_types {
 
-class single_color : public effect {
+class single_color_widget : public effect_widget {
 	Q_OBJECT
 	
 public:
-	single_color();
-	QImage create_effect(const QImage &image, const QRect &) override;
+	single_color_widget();
+	void load_state(effect_state &new_state) override;
+	effect_state get_state() override;
 	
 private:
 	color_label *stored_color;
+	QComboBox *paint_mode_box;
 	
-}; // single_color
+}; // single_color_widget
 
 
-class gradient : public effect {
+class gradient_widget : public effect_widget {
 	Q_OBJECT
 	
 public:
-	gradient();
-	QImage create_effect(const QImage &image, const QRect &boundary) override;
+	gradient_widget();
+	void load_state(effect_state &new_state) override;
+	effect_state get_state() override;
 	
 private slots:
 	void swap_colors();
 	
 private:
-	QComboBox *orient_box;
+	QComboBox *direction_box;
 	color_label *color_1;
 	color_label *color_2;
 	
-	QGradient create_gradient(const QRect &rect);
-	
-}; // gradient
+}; // gradient_widget
 
 
-class pixellate : public effect {
+class pixellate_widget : public effect_widget {
 	Q_OBJECT
 	
 public:
-	pixellate();
-	QImage create_effect(const QImage &image, const QRect &) override;
+	pixellate_widget();
+	void load_state(effect_state &new_state) override;
+	effect_state get_state() override;
 	
 private:
 	QSpinBox *pixel_size;
 	
-	void pixellate_image(QPainter *painter, const QImage &source);
-	
-	QRect create_rect(const QPoint &point);
-	
-}; // pixellate
+}; // pixellate_widget
 
-} // effect_types
 } // color
 } // editor
